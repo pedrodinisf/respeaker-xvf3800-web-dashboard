@@ -1,0 +1,23 @@
+{
+  "permissions": {
+    "allow": [
+      "WebFetch(domain:wiki.seeedstudio.com)",
+      "WebFetch(domain:raw.githubusercontent.com)",
+      "Bash(system_profiler:*)",
+      "Bash(ioreg:*)",
+      "WebFetch(domain:www.cnx-software.com)",
+      "WebFetch(domain:www.seeedstudio.com)",
+      "WebFetch(domain:www.xmos.com)",
+      "Bash(dfu-util:*)",
+      "Bash(brew install:*)",
+      "Bash(shasum:*)",
+      "Bash(SwitchAudioSource:*)",
+      "Bash(defaults read:*)",
+      "Bash(pip3 install:*)",
+      "Bash(chmod:*)",
+      "Bash(pkill:*)",
+      "Bash(python3:*)",
+      "Bash(curl:*)"
+    ]
+  }
+}
