@@ -17,7 +17,10 @@
       "Bash(chmod:*)",
       "Bash(pkill:*)",
       "Bash(python3:*)",
-      "Bash(curl:*)"
+      "Bash(curl:*)",
+      "Bash(for i in {1..5})",
+      "Bash(do curl -s http://localhost:5001/api/status)",
+      "Bash(done)"
     ]
   }
 }

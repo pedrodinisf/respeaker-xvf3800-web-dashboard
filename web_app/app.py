@@ -217,14 +217,21 @@ def set_led_brightness():
 
 @app.route('/api/led/color', methods=['POST'])
 def set_led_color():
-    """Set LED color (RGB) - packed as little-endian uint32: 0xRRGGBB00"""
+    """Set LED color (RGB) with brightness applied"""
     try:
         r = int(request.json.get('r', 255))
         g = int(request.json.get('g', 0))
         b = int(request.json.get('b', 255))
+        brightness = float(request.json.get('brightness', 1.0))  # 0.0-1.0
 
-        # Pack as 32-bit little-endian: bytes [B, G, R, 0]
-        color_bytes = [b, g, r, 0]
+        # Apply brightness to color values
+        r = int(r * brightness)
+        g = int(g * brightness)
+        b = int(b * brightness)
+
+        # Try different byte orders - WS2812 typically uses GRB
+        # Pack as bytes: [G, R, B, 0]
+        color_bytes = [g, r, b, 0]
 
         with device_lock:
             dev = get_device()
@@ -278,6 +285,35 @@ def set_noise_suppress():
             dev = get_device()
             dev.write('PP_MIN_NS', struct.pack('<f', level))
         return jsonify({'success': True})
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route('/api/led/test_color', methods=['POST'])
+def test_led_color():
+    """Test different byte orders for LED color calibration"""
+    try:
+        r = int(request.json.get('r', 255))
+        g = int(request.json.get('g', 0))
+        b = int(request.json.get('b', 0))
+        order = request.json.get('order', 'GRB')  # RGB, GRB, BGR, RBG, BRG, GBR
+
+        # Map byte order
+        orders = {
+            'RGB': [r, g, b, 0],
+            'GRB': [g, r, b, 0],
+            'BGR': [b, g, r, 0],
+            'RBG': [r, b, g, 0],
+            'BRG': [b, r, g, 0],
+            'GBR': [g, b, r, 0]
+        }
+
+        color_bytes = orders.get(order, [g, r, b, 0])
+
+        with device_lock:
+            dev = get_device()
+            dev.write('LED_COLOR', color_bytes)
+
+        return jsonify({'success': True, 'order_used': order, 'bytes': color_bytes})
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)}), 500
 
