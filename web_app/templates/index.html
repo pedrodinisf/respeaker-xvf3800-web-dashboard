@@ -541,6 +541,128 @@
             font-family: 'JetBrains Mono', monospace;
         }
 
+        /* Audio Recording Styles */
+        .record-button {
+            width: 100%;
+            padding: 20px;
+            font-size: 1.3em;
+            font-weight: 700;
+            background: linear-gradient(135deg, var(--accent-red), #ff4d9e);
+            border: none;
+            color: white;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.3s;
+            box-shadow: 0 0 20px rgba(255, 0, 110, 0.3);
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            margin-bottom: 20px;
+        }
+
+        .record-button:hover {
+            box-shadow: 0 0 30px rgba(255, 0, 110, 0.6);
+            transform: translateY(-2px);
+        }
+
+        .record-button.recording {
+            background: linear-gradient(135deg, var(--accent-green), #00ffaa);
+            box-shadow: 0 0 30px rgba(0, 255, 136, 0.6);
+            animation: recordPulse 1.5s infinite;
+        }
+
+        @keyframes recordPulse {
+            0%, 100% { box-shadow: 0 0 30px rgba(0, 255, 136, 0.6); }
+            50% { box-shadow: 0 0 50px rgba(0, 255, 136, 1); }
+        }
+
+        .recording-timer {
+            text-align: center;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 2.5em;
+            font-weight: 700;
+            color: var(--accent-red);
+            margin-bottom: 20px;
+            text-shadow: 0 0 15px rgba(255, 0, 110, 0.5);
+        }
+
+        .recording-timer.active {
+            color: var(--accent-green);
+            text-shadow: 0 0 20px rgba(0, 255, 136, 0.7);
+        }
+
+        .recordings-list {
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .recording-item {
+            background: var(--bg-secondary);
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 12px;
+            border: 1px solid var(--border-color);
+            transition: all 0.3s;
+        }
+
+        .recording-item:hover {
+            background: var(--bg-card);
+            border-color: var(--accent-cyan);
+        }
+
+        .recording-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .recording-name {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.9em;
+            color: var(--accent-cyan);
+            font-weight: 600;
+        }
+
+        .recording-meta {
+            display: flex;
+            gap: 15px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.8em;
+            color: var(--text-secondary);
+            margin-bottom: 10px;
+        }
+
+        .recording-controls {
+            display: flex;
+            gap: 10px;
+        }
+
+        .recording-controls button {
+            flex: 1;
+            padding: 8px 12px;
+            font-size: 0.85em;
+        }
+
+        audio {
+            width: 100%;
+            height: 40px;
+            margin-top: 10px;
+            border-radius: 8px;
+            background: var(--bg-primary);
+        }
+
+        audio::-webkit-media-controls-panel {
+            background: var(--bg-primary);
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 40px 20px;
+            color: var(--text-secondary);
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.9em;
+        }
+
         /* Responsive adjustments */
         @media (max-width: 768px) {
             h1 {
@@ -758,6 +880,29 @@
 
                 <h3 style="margin: 12px 0 10px 0; font-size: 1em; color: var(--text-secondary); letter-spacing: 1px;">OUTPUTS</h3>
                 <div class="gpio-grid" id="gpioOutputs"></div>
+            </div>
+
+            <!-- Audio Recording -->
+            <div class="card" style="grid-column: 1 / -1;">
+                <h2>Audio Recording <span class="info-badge">Lossless WAV</span></h2>
+
+                <div class="recording-timer" id="recordingTimer">00:00</div>
+
+                <button class="record-button" id="recordButton" onclick="toggleRecording()">
+                    ● START RECORDING
+                </button>
+
+                <div class="section-divider"></div>
+
+                <h3 style="margin: 12px 0 15px 0; font-size: 1.1em; color: var(--text-secondary); letter-spacing: 1px;">
+                    RECORDINGS <span id="recordingCount" style="color: var(--accent-cyan);">(0)</span>
+                </h3>
+
+                <div class="recordings-list" id="recordingsList">
+                    <div class="empty-state">
+                        No recordings yet. Click "Start Recording" to create your first lossless audio capture.
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -1129,9 +1274,186 @@
               });
         }
 
+        // ============================================================================
+        // Audio Recording Functions
+        // ============================================================================
+
+        let isRecording = false;
+        let recordingInterval = null;
+        let recordingStartTime = null;
+
+        async function toggleRecording() {
+            if (!isRecording) {
+                await startRecording();
+            } else {
+                await stopRecording();
+            }
+        }
+
+        async function startRecording() {
+            try {
+                const response = await fetch('/api/audio/record/start', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'}
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    isRecording = true;
+                    recordingStartTime = Date.now();
+
+                    // Update UI
+                    const button = document.getElementById('recordButton');
+                    button.textContent = '■ STOP RECORDING';
+                    button.classList.add('recording');
+
+                    const timer = document.getElementById('recordingTimer');
+                    timer.classList.add('active');
+
+                    // Start timer
+                    recordingInterval = setInterval(() => {
+                        const elapsed = Math.floor((Date.now() - recordingStartTime) / 1000);
+                        const minutes = Math.floor(elapsed / 60);
+                        const seconds = elapsed % 60;
+                        timer.textContent = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+                    }, 100);
+
+                    console.log('Recording started:', data);
+                } else {
+                    alert('Failed to start recording: ' + data.error);
+                }
+            } catch (error) {
+                console.error('Error starting recording:', error);
+                alert('Error starting recording: ' + error.message);
+            }
+        }
+
+        async function stopRecording() {
+            try {
+                const response = await fetch('/api/audio/record/stop', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'}
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    isRecording = false;
+
+                    // Clear timer
+                    if (recordingInterval) {
+                        clearInterval(recordingInterval);
+                        recordingInterval = null;
+                    }
+
+                    // Update UI
+                    const button = document.getElementById('recordButton');
+                    button.textContent = '● START RECORDING';
+                    button.classList.remove('recording');
+
+                    const timer = document.getElementById('recordingTimer');
+                    timer.textContent = '00:00';
+                    timer.classList.remove('active');
+
+                    console.log('Recording saved:', data);
+
+                    // Refresh recordings list
+                    loadRecordings();
+                } else {
+                    alert('Failed to stop recording: ' + data.error);
+                }
+            } catch (error) {
+                console.error('Error stopping recording:', error);
+                alert('Error stopping recording: ' + error.message);
+            }
+        }
+
+        async function loadRecordings() {
+            try {
+                const response = await fetch('/api/audio/recordings');
+                const data = await response.json();
+
+                if (data.success) {
+                    const list = document.getElementById('recordingsList');
+                    const count = document.getElementById('recordingCount');
+
+                    count.textContent = `(${data.recordings.length})`;
+
+                    if (data.recordings.length === 0) {
+                        list.innerHTML = `
+                            <div class="empty-state">
+                                No recordings yet. Click "Start Recording" to create your first lossless audio capture.
+                            </div>
+                        `;
+                        return;
+                    }
+
+                    list.innerHTML = data.recordings.map(rec => {
+                        const date = new Date(rec.created);
+                        const sizeKB = (rec.size / 1024).toFixed(1);
+                        const sizeMB = (rec.size / (1024 * 1024)).toFixed(2);
+                        const sizeStr = rec.size > 1024 * 1024 ? `${sizeMB} MB` : `${sizeKB} KB`;
+
+                        return `
+                            <div class="recording-item">
+                                <div class="recording-header">
+                                    <span class="recording-name">${rec.filename}</span>
+                                </div>
+                                <div class="recording-meta">
+                                    <span>📅 ${date.toLocaleDateString()} ${date.toLocaleTimeString()}</span>
+                                    <span>💾 ${sizeStr}</span>
+                                </div>
+                                <audio controls>
+                                    <source src="/api/audio/recordings/${rec.filename}" type="audio/wav">
+                                    Your browser does not support the audio element.
+                                </audio>
+                                <div class="recording-controls">
+                                    <button onclick="downloadRecording('${rec.filename}')">⬇ Download</button>
+                                    <button onclick="deleteRecording('${rec.filename}')" style="background: rgba(255, 0, 110, 0.2); border-color: var(--accent-red);">🗑 Delete</button>
+                                </div>
+                            </div>
+                        `;
+                    }).join('');
+                }
+            } catch (error) {
+                console.error('Error loading recordings:', error);
+            }
+        }
+
+        function downloadRecording(filename) {
+            window.open(`/api/audio/recordings/${filename}`, '_blank');
+        }
+
+        async function deleteRecording(filename) {
+            if (!confirm(`Delete recording "${filename}"?`)) {
+                return;
+            }
+
+            try {
+                const response = await fetch(`/api/audio/recordings/${filename}`, {
+                    method: 'DELETE'
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    loadRecordings();
+                } else {
+                    alert('Failed to delete recording: ' + data.error);
+                }
+            } catch (error) {
+                console.error('Error deleting recording:', error);
+                alert('Error deleting recording: ' + error.message);
+            }
+        }
+
         // Update every 200ms
         setInterval(updateStatus, 200);
         updateStatus();
+
+        // Load recordings on page load
+        loadRecordings();
     </script>
 </body>
 </html>

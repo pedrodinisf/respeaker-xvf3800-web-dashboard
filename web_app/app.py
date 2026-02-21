@@ -4,14 +4,19 @@ ReSpeaker XVF3800 Web Control Dashboard v2
 Enhanced real-time visualization and control interface
 """
 
-from flask import Flask, render_template, jsonify, request
+from flask import Flask, render_template, jsonify, request, send_file
 import usb.core
 import usb.util
 import usb.backend.libusb1
 import struct
 import math
 import time
-from threading import Lock
+import os
+import sounddevice as sd
+import numpy as np
+from scipy.io.wavfile import write as write_wav
+from datetime import datetime
+from threading import Lock, Thread
 from collections import deque
 
 app = Flask(__name__)
@@ -24,6 +29,20 @@ usb_backend = usb.backend.libusb1.get_backend(
 
 # History storage for beam energies (last 50 samples per beam)
 beam_history = {i: deque(maxlen=50) for i in range(4)}
+
+# Recording state
+recording_state = {
+    'is_recording': False,
+    'data': [],
+    'start_time': None,
+    'sample_rate': 16000,  # ReSpeaker native sample rate
+    'channels': 2,         # Stereo (processed output)
+}
+recording_lock = Lock()
+
+# Create recordings directory
+RECORDINGS_DIR = os.path.join(os.path.dirname(__file__), 'recordings')
+os.makedirs(RECORDINGS_DIR, exist_ok=True)
 
 class ReSpeaker:
     """ReSpeaker XVF3800 USB control interface"""
@@ -314,6 +333,226 @@ def test_led_color():
             dev.write('LED_COLOR', color_bytes)
 
         return jsonify({'success': True, 'order_used': order, 'bytes': color_bytes})
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+# ============================================================================
+# Audio Recording Endpoints
+# ============================================================================
+
+def find_respeaker_device():
+    """Find the ReSpeaker audio device index"""
+    devices = sd.query_devices()
+    for idx, device in enumerate(devices):
+        if 'respeaker' in device['name'].lower() or 'xvf3800' in device['name'].lower():
+            if device['max_input_channels'] > 0:
+                return idx
+    return None
+
+@app.route('/api/audio/devices')
+def get_audio_devices():
+    """List available audio devices"""
+    try:
+        devices = sd.query_devices()
+        device_list = []
+        for idx, device in enumerate(devices):
+            device_list.append({
+                'index': idx,
+                'name': device['name'],
+                'inputs': device['max_input_channels'],
+                'outputs': device['max_output_channels'],
+                'sample_rate': int(device['default_samplerate'])
+            })
+
+        respeaker_idx = find_respeaker_device()
+
+        return jsonify({
+            'success': True,
+            'devices': device_list,
+            'respeaker_index': respeaker_idx
+        })
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route('/api/audio/record/start', methods=['POST'])
+def start_recording():
+    """Start audio recording from ReSpeaker"""
+    global recording_state
+
+    try:
+        with recording_lock:
+            if recording_state['is_recording']:
+                return jsonify({'success': False, 'error': 'Already recording'}), 400
+
+            # Find ReSpeaker device
+            device_idx = find_respeaker_device()
+            if device_idx is None:
+                return jsonify({'success': False, 'error': 'ReSpeaker device not found'}), 404
+
+            # Get device info
+            device_info = sd.query_devices(device_idx)
+            sample_rate = int(device_info['default_samplerate'])
+            channels = min(2, device_info['max_input_channels'])  # Stereo or mono
+
+            # Reset recording state
+            recording_state['data'] = []
+            recording_state['is_recording'] = True
+            recording_state['start_time'] = datetime.now()
+            recording_state['sample_rate'] = sample_rate
+            recording_state['channels'] = channels
+
+            # Start recording in background thread
+            def record_audio():
+                try:
+                    with sd.InputStream(
+                        device=device_idx,
+                        channels=channels,
+                        samplerate=sample_rate,
+                        dtype='int16',
+                        blocksize=4096
+                    ) as stream:
+                        while recording_state['is_recording']:
+                            data, overflowed = stream.read(4096)
+                            if overflowed:
+                                print("Audio buffer overflow!")
+                            recording_state['data'].append(data.copy())
+                except Exception as e:
+                    print(f"Recording error: {e}")
+                    recording_state['is_recording'] = False
+
+            Thread(target=record_audio, daemon=True).start()
+
+            return jsonify({
+                'success': True,
+                'sample_rate': sample_rate,
+                'channels': channels,
+                'device': device_info['name']
+            })
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route('/api/audio/record/stop', methods=['POST'])
+def stop_recording():
+    """Stop recording and save to WAV file"""
+    global recording_state
+
+    try:
+        with recording_lock:
+            if not recording_state['is_recording']:
+                return jsonify({'success': False, 'error': 'Not recording'}), 400
+
+            # Stop recording
+            recording_state['is_recording'] = False
+            time.sleep(0.2)  # Wait for last chunks
+
+            # Combine all recorded chunks
+            if not recording_state['data']:
+                return jsonify({'success': False, 'error': 'No data recorded'}), 400
+
+            audio_data = np.concatenate(recording_state['data'], axis=0)
+
+            # Generate filename with timestamp
+            timestamp = recording_state['start_time'].strftime('%Y%m%d_%H%M%S')
+            filename = f"recording_{timestamp}.wav"
+            filepath = os.path.join(RECORDINGS_DIR, filename)
+
+            # Save as WAV (lossless)
+            write_wav(filepath, recording_state['sample_rate'], audio_data)
+
+            # Calculate duration and file size
+            duration = len(audio_data) / recording_state['sample_rate']
+            file_size = os.path.getsize(filepath)
+
+            return jsonify({
+                'success': True,
+                'filename': filename,
+                'duration': round(duration, 2),
+                'file_size': file_size,
+                'sample_rate': recording_state['sample_rate'],
+                'channels': recording_state['channels']
+            })
+    except Exception as e:
+        recording_state['is_recording'] = False
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route('/api/audio/record/status')
+def get_recording_status():
+    """Get current recording status"""
+    with recording_lock:
+        if recording_state['is_recording']:
+            duration = (datetime.now() - recording_state['start_time']).total_seconds()
+            return jsonify({
+                'success': True,
+                'is_recording': True,
+                'duration': round(duration, 1),
+                'sample_rate': recording_state['sample_rate'],
+                'channels': recording_state['channels']
+            })
+        else:
+            return jsonify({
+                'success': True,
+                'is_recording': False
+            })
+
+@app.route('/api/audio/recordings')
+def list_recordings():
+    """List all saved recordings"""
+    try:
+        recordings = []
+        for filename in os.listdir(RECORDINGS_DIR):
+            if filename.endswith('.wav'):
+                filepath = os.path.join(RECORDINGS_DIR, filename)
+                stat = os.stat(filepath)
+                recordings.append({
+                    'filename': filename,
+                    'size': stat.st_size,
+                    'created': datetime.fromtimestamp(stat.st_ctime).isoformat(),
+                    'modified': datetime.fromtimestamp(stat.st_mtime).isoformat()
+                })
+
+        # Sort by creation time (newest first)
+        recordings.sort(key=lambda x: x['created'], reverse=True)
+
+        return jsonify({
+            'success': True,
+            'recordings': recordings
+        })
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route('/api/audio/recordings/<filename>')
+def get_recording(filename):
+    """Download/play a recording file"""
+    try:
+        # Security: prevent directory traversal
+        if '..' in filename or '/' in filename:
+            return jsonify({'success': False, 'error': 'Invalid filename'}), 400
+
+        filepath = os.path.join(RECORDINGS_DIR, filename)
+
+        if not os.path.exists(filepath):
+            return jsonify({'success': False, 'error': 'File not found'}), 404
+
+        return send_file(filepath, mimetype='audio/wav')
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route('/api/audio/recordings/<filename>', methods=['DELETE'])
+def delete_recording(filename):
+    """Delete a recording file"""
+    try:
+        # Security: prevent directory traversal
+        if '..' in filename or '/' in filename:
+            return jsonify({'success': False, 'error': 'Invalid filename'}), 400
+
+        filepath = os.path.join(RECORDINGS_DIR, filename)
+
+        if not os.path.exists(filepath):
+            return jsonify({'success': False, 'error': 'File not found'}), 404
+
+        os.remove(filepath)
+
+        return jsonify({'success': True})
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)}), 500
 
