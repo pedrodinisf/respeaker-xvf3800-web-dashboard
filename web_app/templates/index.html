@@ -674,6 +674,91 @@
             font-size: 0.9em;
         }
 
+        /* Preset Styles */
+        .preset-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 15px;
+        }
+
+        .preset-card {
+            background: var(--bg-secondary);
+            padding: 18px;
+            border-radius: 10px;
+            border: 2px solid var(--border-color);
+            cursor: pointer;
+            transition: all 0.3s;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .preset-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, var(--accent-cyan), var(--accent-blue));
+            opacity: 0;
+            transition: all 0.3s;
+        }
+
+        .preset-card:hover {
+            border-color: var(--accent-cyan);
+            background: rgba(0, 217, 255, 0.05);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(0, 217, 255, 0.2);
+        }
+
+        .preset-card:hover::before {
+            opacity: 1;
+        }
+
+        .preset-card.active {
+            border-color: var(--accent-green);
+            background: rgba(0, 255, 136, 0.08);
+            box-shadow: 0 0 20px rgba(0, 255, 136, 0.3);
+        }
+
+        .preset-card.active::before {
+            background: var(--accent-green);
+            opacity: 1;
+        }
+
+        .preset-name {
+            font-family: 'Rajdhani', sans-serif;
+            font-size: 1.2em;
+            font-weight: 600;
+            color: var(--accent-cyan);
+            margin-bottom: 8px;
+            letter-spacing: 1px;
+        }
+
+        .preset-card.active .preset-name {
+            color: var(--accent-green);
+        }
+
+        .preset-description {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.8em;
+            color: var(--text-secondary);
+            line-height: 1.5;
+        }
+
+        .preset-badge {
+            display: inline-block;
+            background: rgba(0, 255, 136, 0.2);
+            color: var(--accent-green);
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 0.7em;
+            font-family: 'JetBrains Mono', monospace;
+            margin-top: 10px;
+            border: 1px solid var(--accent-green);
+            letter-spacing: 1px;
+        }
+
         /* Responsive adjustments */
         @media (max-width: 768px) {
             h1 {
@@ -761,6 +846,86 @@
                     <div class="raw-data-item">
                         <div class="raw-data-label">Last Update</div>
                         <div class="raw-data-value" id="lastUpdate" style="font-size: 0.9em;">---</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Presets -->
+            <div class="card" style="grid-column: 1 / -1;">
+                <h2>Presets <span class="info-badge">One-Click Config</span></h2>
+                <p style="font-family: 'JetBrains Mono', monospace; font-size: 0.85em; color: var(--text-secondary); margin-bottom: 20px;">
+                    Optimized configurations for different use cases. Click to apply instantly.
+                </p>
+
+                <div class="preset-grid">
+                    <div class="preset-card" onclick="applyPreset('teams')">
+                        <div class="preset-name">📞 Microsoft Teams</div>
+                        <div class="preset-description">
+                            Hardware echo cancellation, balanced AGC, optimized for professional calls
+                        </div>
+                        <div class="preset-badge">CONFERENCING</div>
+                    </div>
+
+                    <div class="preset-card" onclick="applyPreset('meet')">
+                        <div class="preset-name">🎥 Google Meet</div>
+                        <div class="preset-description">
+                            Balanced processing, works with Meet's built-in audio enhancements
+                        </div>
+                        <div class="preset-badge">CONFERENCING</div>
+                    </div>
+
+                    <div class="preset-card" onclick="applyPreset('zoom')">
+                        <div class="preset-name">💼 Zoom</div>
+                        <div class="preset-description">
+                            Moderate echo suppression, consistent levels for Zoom meetings
+                        </div>
+                        <div class="preset-badge">CONFERENCING</div>
+                    </div>
+
+                    <div class="preset-card" onclick="applyPreset('whisper')">
+                        <div class="preset-name">🤖 AI Speech-to-Text</div>
+                        <div class="preset-description">
+                            High gain, aggressive noise removal, clean speech for Whisper/transcription
+                        </div>
+                        <div class="preset-badge">AI TRANSCRIPTION</div>
+                    </div>
+
+                    <div class="preset-card" onclick="applyPreset('realtime_transcription')">
+                        <div class="preset-name">⚡ Real-Time Transcription</div>
+                        <div class="preset-description">
+                            Fast AGC response, optimized for live AI transcription services
+                        </div>
+                        <div class="preset-badge">AI TRANSCRIPTION</div>
+                    </div>
+
+                    <div class="preset-card" onclick="applyPreset('recording')">
+                        <div class="preset-name">🎙️ High-Quality Recording</div>
+                        <div class="preset-description">
+                            Minimal processing, natural sound for podcasts and voiceovers
+                        </div>
+                        <div class="preset-badge">RECORDING</div>
+                    </div>
+
+                    <div class="preset-card" onclick="applyPreset('noisy')">
+                        <div class="preset-name">🔊 Noisy Environment</div>
+                        <div class="preset-description">
+                            Aggressive noise suppression, fixed beams for loud backgrounds
+                        </div>
+                        <div class="preset-badge">ENVIRONMENT</div>
+                    </div>
+
+                    <div class="preset-card" onclick="applyPreset('quiet')">
+                        <div class="preset-name">🤫 Quiet Studio</div>
+                        <div class="preset-description">
+                            Minimal processing for controlled, quiet environments
+                        </div>
+                        <div class="preset-badge">ENVIRONMENT</div>
+                    </div>
+                </div>
+
+                <div style="margin-top: 20px; padding: 15px; background: rgba(0, 217, 255, 0.1); border-radius: 8px; border-left: 3px solid var(--accent-cyan);">
+                    <div style="font-family: 'JetBrains Mono', monospace; font-size: 0.85em; color: var(--text-secondary);">
+                        <strong style="color: var(--accent-cyan);">💡 TIP:</strong> For Teams/Meet/Zoom, connect speakers to ReSpeaker's 3.5mm jack for best echo cancellation!
                     </div>
                 </div>
             </div>
@@ -1499,6 +1664,115 @@
                   }
               });
         }
+
+        // ============================================================================
+        // Preset Functions
+        // ============================================================================
+
+        let currentPreset = null;
+
+        async function applyPreset(presetName) {
+            try {
+                // Visual feedback - show loading state
+                const allCards = document.querySelectorAll('.preset-card');
+                allCards.forEach(card => {
+                    card.style.opacity = '0.5';
+                    card.style.pointerEvents = 'none';
+                });
+
+                const response = await fetch(`/api/audio/preset/${presetName}`, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'}
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    currentPreset = presetName;
+
+                    // Update UI - mark active preset
+                    allCards.forEach(card => {
+                        card.classList.remove('active');
+                        card.style.opacity = '1';
+                        card.style.pointerEvents = 'auto';
+                    });
+
+                    // Find and mark the active preset
+                    const activeCard = Array.from(allCards).find(card =>
+                        card.getAttribute('onclick').includes(presetName)
+                    );
+                    if (activeCard) {
+                        activeCard.classList.add('active');
+                    }
+
+                    // Show success notification
+                    showNotification(`✓ Applied: ${data.preset}`, 'success');
+
+                    // Refresh status after 500ms to show new values
+                    setTimeout(updateStatus, 500);
+                } else {
+                    allCards.forEach(card => {
+                        card.style.opacity = '1';
+                        card.style.pointerEvents = 'auto';
+                    });
+                    showNotification(`✗ Failed: ${data.error}`, 'error');
+                }
+            } catch (error) {
+                console.error('Error applying preset:', error);
+                document.querySelectorAll('.preset-card').forEach(card => {
+                    card.style.opacity = '1';
+                    card.style.pointerEvents = 'auto';
+                });
+                showNotification('✗ Error applying preset', 'error');
+            }
+        }
+
+        function showNotification(message, type) {
+            // Remove existing notification if any
+            const existing = document.getElementById('notification');
+            if (existing) existing.remove();
+
+            // Create notification element
+            const notification = document.createElement('div');
+            notification.id = 'notification';
+            notification.textContent = message;
+            notification.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                padding: 15px 25px;
+                background: ${type === 'success' ? 'rgba(0, 255, 136, 0.95)' : 'rgba(255, 0, 110, 0.95)'};
+                color: ${type === 'success' ? '#000' : '#fff'};
+                border-radius: 8px;
+                font-family: 'JetBrains Mono', monospace;
+                font-weight: 600;
+                z-index: 10000;
+                box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+                animation: slideIn 0.3s ease;
+            `;
+
+            document.body.appendChild(notification);
+
+            // Auto-remove after 3 seconds
+            setTimeout(() => {
+                notification.style.animation = 'slideOut 0.3s ease';
+                setTimeout(() => notification.remove(), 300);
+            }, 3000);
+        }
+
+        // Add CSS animations
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes slideIn {
+                from { transform: translateX(400px); opacity: 0; }
+                to { transform: translateX(0); opacity: 1; }
+            }
+            @keyframes slideOut {
+                from { transform: translateX(0); opacity: 1; }
+                to { transform: translateX(400px); opacity: 0; }
+            }
+        `;
+        document.head.appendChild(style);
 
         // ============================================================================
         // Audio Recording Functions

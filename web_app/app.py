@@ -595,6 +595,259 @@ def set_echo_enable():
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)}), 500
 
+# ============================================================================
+# Preset Configurations
+# ============================================================================
+
+PRESETS = {
+    'teams': {
+        'name': 'Microsoft Teams',
+        'description': 'Optimized for Teams calls with hardware echo cancellation',
+        'params': {
+            'AUDIO_MGR_MIC_GAIN': 90.0,
+            'AUDIO_MGR_REF_GAIN': 8.0,
+            'PP_AGCONOFF': 1,
+            'PP_AGCMAXGAIN': 64.0,
+            'PP_AGCDESIREDLEVEL': 0.001,
+            'PP_AGCTIME': 2.0,
+            'PP_LIMITONOFF': 1,
+            'PP_LIMITPLIMIT': 0.1,
+            'PP_MIN_NS': 0.4,
+            'PP_ECHOONOFF': 1,
+            'PP_GAMMA_E': 1.5,
+            'PP_GAMMA_ETAIL': 1.5,
+            'PP_GAMMA_ENL': 2.0,
+            'PP_NLATTENONOFF': 1,
+            'PP_DTSENSITIVE': 3,
+            'AEC_HPFONOFF': 2,  # 125Hz HPF
+            'AEC_FIXEDBEAMSONOFF': 0,
+        }
+    },
+    'meet': {
+        'name': 'Google Meet',
+        'description': 'Optimized for Google Meet with balanced processing',
+        'params': {
+            'AUDIO_MGR_MIC_GAIN': 85.0,
+            'AUDIO_MGR_REF_GAIN': 8.0,
+            'PP_AGCONOFF': 1,
+            'PP_AGCMAXGAIN': 50.0,
+            'PP_AGCDESIREDLEVEL': 0.001,
+            'PP_AGCTIME': 1.5,
+            'PP_LIMITONOFF': 1,
+            'PP_LIMITPLIMIT': 0.08,
+            'PP_MIN_NS': 0.3,
+            'PP_ECHOONOFF': 1,
+            'PP_GAMMA_E': 1.2,
+            'PP_GAMMA_ETAIL': 1.2,
+            'PP_GAMMA_ENL': 1.5,
+            'PP_NLATTENONOFF': 1,
+            'PP_DTSENSITIVE': 4,
+            'AEC_HPFONOFF': 2,  # 125Hz HPF
+            'AEC_FIXEDBEAMSONOFF': 0,
+        }
+    },
+    'zoom': {
+        'name': 'Zoom',
+        'description': 'Optimized for Zoom meetings',
+        'params': {
+            'AUDIO_MGR_MIC_GAIN': 88.0,
+            'AUDIO_MGR_REF_GAIN': 8.0,
+            'PP_AGCONOFF': 1,
+            'PP_AGCMAXGAIN': 60.0,
+            'PP_AGCDESIREDLEVEL': 0.0012,
+            'PP_AGCTIME': 1.8,
+            'PP_LIMITONOFF': 1,
+            'PP_LIMITPLIMIT': 0.09,
+            'PP_MIN_NS': 0.35,
+            'PP_ECHOONOFF': 1,
+            'PP_GAMMA_E': 1.4,
+            'PP_GAMMA_ETAIL': 1.4,
+            'PP_GAMMA_ENL': 1.8,
+            'PP_NLATTENONOFF': 1,
+            'PP_DTSENSITIVE': 3,
+            'AEC_HPFONOFF': 2,
+            'AEC_FIXEDBEAMSONOFF': 0,
+        }
+    },
+    'whisper': {
+        'name': 'AI Speech-to-Text (Whisper)',
+        'description': 'High-quality clean speech for AI transcription (Whisper, etc.)',
+        'params': {
+            'AUDIO_MGR_MIC_GAIN': 100.0,
+            'AUDIO_MGR_REF_GAIN': 8.0,
+            'PP_AGCONOFF': 1,
+            'PP_AGCMAXGAIN': 120.0,  # Higher for consistent levels
+            'PP_AGCDESIREDLEVEL': 0.002,
+            'PP_AGCTIME': 1.0,  # Faster response
+            'PP_LIMITONOFF': 1,
+            'PP_LIMITPLIMIT': 0.05,  # Prevent clipping
+            'PP_MIN_NS': 0.6,  # Aggressive noise removal
+            'PP_ECHOONOFF': 0,  # No echo suppression needed
+            'PP_GAMMA_E': 0.0,
+            'PP_GAMMA_ETAIL': 0.0,
+            'PP_GAMMA_ENL': 0.0,
+            'PP_NLATTENONOFF': 0,
+            'PP_DTSENSITIVE': 0,
+            'AEC_HPFONOFF': 3,  # 150Hz HPF to remove low rumble
+            'AEC_FIXEDBEAMSONOFF': 0,  # Track speaker
+        }
+    },
+    'recording': {
+        'name': 'High-Quality Recording',
+        'description': 'Minimal processing for natural sound (podcasts, voiceovers)',
+        'params': {
+            'AUDIO_MGR_MIC_GAIN': 95.0,
+            'AUDIO_MGR_REF_GAIN': 8.0,
+            'PP_AGCONOFF': 1,
+            'PP_AGCMAXGAIN': 40.0,  # Conservative AGC
+            'PP_AGCDESIREDLEVEL': 0.001,
+            'PP_AGCTIME': 3.0,  # Slow, natural
+            'PP_LIMITONOFF': 1,
+            'PP_LIMITPLIMIT': 0.2,  # Gentle limiting
+            'PP_MIN_NS': 0.1,  # Minimal noise suppression
+            'PP_ECHOONOFF': 0,
+            'PP_GAMMA_E': 0.0,
+            'PP_GAMMA_ETAIL': 0.0,
+            'PP_GAMMA_ENL': 0.0,
+            'PP_NLATTENONOFF': 0,
+            'PP_DTSENSITIVE': 0,
+            'AEC_HPFONOFF': 1,  # Light 70Hz HPF
+            'AEC_FIXEDBEAMSONOFF': 0,
+        }
+    },
+    'noisy': {
+        'name': 'Noisy Environment',
+        'description': 'Aggressive noise suppression for loud backgrounds',
+        'params': {
+            'AUDIO_MGR_MIC_GAIN': 80.0,
+            'AUDIO_MGR_REF_GAIN': 8.0,
+            'PP_AGCONOFF': 1,
+            'PP_AGCMAXGAIN': 80.0,
+            'PP_AGCDESIREDLEVEL': 0.0015,
+            'PP_AGCTIME': 1.5,
+            'PP_LIMITONOFF': 1,
+            'PP_LIMITPLIMIT': 0.08,
+            'PP_MIN_NS': 0.8,  # Very aggressive noise suppression
+            'PP_ECHOONOFF': 1,
+            'PP_GAMMA_E': 1.8,
+            'PP_GAMMA_ETAIL': 1.8,
+            'PP_GAMMA_ENL': 2.5,
+            'PP_NLATTENONOFF': 1,
+            'PP_DTSENSITIVE': 2,
+            'AEC_HPFONOFF': 4,  # 180Hz HPF to cut low noise
+            'AEC_FIXEDBEAMSONOFF': 1,  # Fixed beam helps in noise
+        }
+    },
+    'quiet': {
+        'name': 'Quiet Studio',
+        'description': 'Minimal processing for controlled quiet environments',
+        'params': {
+            'AUDIO_MGR_MIC_GAIN': 75.0,
+            'AUDIO_MGR_REF_GAIN': 8.0,
+            'PP_AGCONOFF': 1,
+            'PP_AGCMAXGAIN': 30.0,
+            'PP_AGCDESIREDLEVEL': 0.001,
+            'PP_AGCTIME': 3.5,
+            'PP_LIMITONOFF': 1,
+            'PP_LIMITPLIMIT': 0.15,
+            'PP_MIN_NS': 0.05,  # Very light
+            'PP_ECHOONOFF': 0,
+            'PP_GAMMA_E': 0.0,
+            'PP_GAMMA_ETAIL': 0.0,
+            'PP_GAMMA_ENL': 0.0,
+            'PP_NLATTENONOFF': 0,
+            'PP_DTSENSITIVE': 0,
+            'AEC_HPFONOFF': 0,  # No HPF
+            'AEC_FIXEDBEAMSONOFF': 0,
+        }
+    },
+    'realtime_transcription': {
+        'name': 'Real-Time Transcription',
+        'description': 'Optimized for live AI transcription services',
+        'params': {
+            'AUDIO_MGR_MIC_GAIN': 95.0,
+            'AUDIO_MGR_REF_GAIN': 8.0,
+            'PP_AGCONOFF': 1,
+            'PP_AGCMAXGAIN': 100.0,
+            'PP_AGCDESIREDLEVEL': 0.0018,
+            'PP_AGCTIME': 0.8,  # Fast for real-time
+            'PP_AGCFASTTIME': 0.2,
+            'PP_LIMITONOFF': 1,
+            'PP_LIMITPLIMIT': 0.06,
+            'PP_MIN_NS': 0.55,
+            'PP_ECHOONOFF': 0,
+            'PP_GAMMA_E': 0.0,
+            'PP_GAMMA_ETAIL': 0.0,
+            'PP_GAMMA_ENL': 0.0,
+            'PP_NLATTENONOFF': 0,
+            'PP_DTSENSITIVE': 0,
+            'AEC_HPFONOFF': 3,  # 150Hz
+            'AEC_FIXEDBEAMSONOFF': 0,
+        }
+    },
+}
+
+@app.route('/api/audio/presets')
+def list_presets():
+    """List all available presets"""
+    try:
+        presets_info = {
+            key: {
+                'name': preset['name'],
+                'description': preset['description']
+            }
+            for key, preset in PRESETS.items()
+        }
+        return jsonify({'success': True, 'presets': presets_info})
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route('/api/audio/preset/<preset_name>', methods=['POST'])
+def apply_preset(preset_name):
+    """Apply a preset configuration"""
+    try:
+        if preset_name not in PRESETS:
+            return jsonify({'success': False, 'error': f'Preset {preset_name} not found'}), 404
+
+        preset = PRESETS[preset_name]
+        params = preset['params']
+
+        with device_lock:
+            dev = get_device()
+
+            # Apply each parameter in the preset
+            for param_name, value in params.items():
+                try:
+                    if param_name not in dev.PARAMS:
+                        continue
+
+                    resid, cmdid, length, data_type = dev.PARAMS[param_name]
+
+                    # Pack data based on type
+                    if data_type == 'float':
+                        data = struct.pack('<f', float(value))
+                    elif data_type == 'int32':
+                        data = struct.pack('<i', int(value))
+                    elif data_type == 'uint8':
+                        data = struct.pack('<B', int(value))
+                    else:
+                        continue
+
+                    dev.write(param_name, data)
+                    time.sleep(0.01)  # Small delay between writes
+
+                except Exception as param_error:
+                    print(f"Error setting {param_name}: {param_error}")
+                    continue
+
+        return jsonify({
+            'success': True,
+            'preset': preset['name'],
+            'description': preset['description']
+        })
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
 @app.route('/api/led/test_color', methods=['POST'])
 def test_led_color():
     """Test different byte orders for LED color calibration"""
