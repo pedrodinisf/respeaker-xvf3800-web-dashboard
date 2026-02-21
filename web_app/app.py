@@ -52,24 +52,56 @@ class ReSpeaker:
     PID = 0x001A
 
     # Parameter definitions (resid, cmdid, length, data_type)
+    # Based on official xvf_host.py PARAMETERS dictionary
     PARAMS = {
+        # Read-only status
         'VERSION': (48, 0, 3, 'uint8'),
         'DOA_VALUE': (20, 18, 4, 'mixed'),
         'AEC_AZIMUTH_VALUES': (33, 75, 16, 'float'),
         'AEC_SPENERGY_VALUES': (33, 76, 16, 'float'),
-        'LED_EFFECT': (20, 12, 1, 'uint8'),
-        'LED_BRIGHTNESS': (20, 13, 1, 'uint8'),
-        'LED_COLOR': (20, 16, 4, 'uint32'),
-        'LED_SPEED': (20, 15, 1, 'uint8'),
         'GPI_READ_VALUES': (36, 0, 3, 'uint8'),
         'GPO_READ_VALUES': (20, 0, 5, 'uint8'),
-        'AUDIO_MGR_MIC_GAIN': (35, 0, 4, 'float'),
-        'PP_AGCMAXGAIN': (17, 10, 4, 'float'),
-        'PP_AGCGAIN': (17, 13, 4, 'float'),
-        'PP_MIN_NS': (17, 21, 4, 'float'),
-        'PP_MIN_NN': (17, 22, 4, 'float'),
-        'PP_AGCONOFF': (17, 9, 4, 'int32'),
-        'PP_ECHOONOFF': (17, 23, 4, 'int32'),
+        'PP_AGCGAIN': (17, 13, 4, 'float'),  # Current AGC gain (read-only)
+
+        # LED Control (resid=20)
+        'LED_EFFECT': (20, 12, 1, 'uint8'),        # Range: 0-5
+        'LED_BRIGHTNESS': (20, 13, 1, 'uint8'),    # Range: 0-255
+        'LED_COLOR': (20, 16, 4, 'uint32'),
+        'LED_SPEED': (20, 15, 1, 'uint8'),
+
+        # Audio Manager (resid=35)
+        'AUDIO_MGR_MIC_GAIN': (35, 0, 4, 'float'),      # Pre-SHF mic gain
+        'AUDIO_MGR_REF_GAIN': (35, 1, 4, 'float'),      # Pre-SHF reference gain
+        'AUDIO_MGR_SYS_DELAY': (35, 26, 4, 'int32'),    # System delay in samples
+
+        # Post-Processing AGC (resid=17)
+        'PP_AGCONOFF': (17, 10, 4, 'int32'),            # Range: 0,1
+        'PP_AGCMAXGAIN': (17, 11, 4, 'float'),          # Range: [1.0 .. 1000.0]
+        'PP_AGCDESIREDLEVEL': (17, 12, 4, 'float'),     # Range: [1e-8 .. 1.0]
+        'PP_AGCTIME': (17, 14, 4, 'float'),             # Range: [0.5 .. 4.0] seconds
+        'PP_AGCFASTTIME': (17, 15, 4, 'float'),         # Range: [0.05 .. 4.0] seconds
+
+        # Post-Processing Limiter (resid=17)
+        'PP_LIMITONOFF': (17, 19, 4, 'int32'),          # Range: 0,1
+        'PP_LIMITPLIMIT': (17, 20, 4, 'float'),         # Range: [1e-8 .. 1.0]
+
+        # Post-Processing Noise Suppression (resid=17)
+        'PP_MIN_NS': (17, 21, 4, 'float'),              # Range: [0.0 .. 1.0]
+        'PP_MIN_NN': (17, 22, 4, 'float'),              # Range: [0.0 .. 1.0]
+
+        # Post-Processing Echo Suppression (resid=17)
+        'PP_ECHOONOFF': (17, 23, 4, 'int32'),           # Range: 0,1
+        'PP_GAMMA_E': (17, 24, 4, 'float'),             # Range: [0.0 .. 2.0]
+        'PP_GAMMA_ETAIL': (17, 25, 4, 'float'),         # Range: [0.0 .. 2.0]
+        'PP_GAMMA_ENL': (17, 26, 4, 'float'),           # Range: [0.0 .. 5.0]
+        'PP_NLATTENONOFF': (17, 27, 4, 'int32'),        # Range: 0,1
+        'PP_DTSENSITIVE': (17, 31, 4, 'int32'),         # Range: [0..5, 10..15]
+
+        # AEC Settings (resid=33)
+        'AEC_HPFONOFF': (33, 1, 4, 'int32'),            # Range: 0,1,2,3,4
+        'AEC_ASROUTONOFF': (33, 35, 4, 'int32'),        # Range: 0,1
+        'AEC_ASROUTGAIN': (33, 36, 4, 'float'),         # Range: [0.0 .. 1000.0]
+        'AEC_FIXEDBEAMSONOFF': (33, 37, 4, 'int32'),    # Range: 0,1
     }
 
     def __init__(self):
@@ -149,27 +181,40 @@ def get_status():
             gpo_result = dev.read('GPO_READ_VALUES')
             gpo_values = list(gpo_result[1:6])
 
-            # Read audio settings
-            mic_gain_result = dev.read('AUDIO_MGR_MIC_GAIN')
-            mic_gain = struct.unpack_from('<f', mic_gain_result, 1)[0]
+            # Read Audio Manager settings
+            mic_gain = struct.unpack_from('<f', dev.read('AUDIO_MGR_MIC_GAIN'), 1)[0]
+            ref_gain = struct.unpack_from('<f', dev.read('AUDIO_MGR_REF_GAIN'), 1)[0]
+            sys_delay = struct.unpack_from('<i', dev.read('AUDIO_MGR_SYS_DELAY'), 1)[0]
 
-            agc_max_result = dev.read('PP_AGCMAXGAIN')
-            agc_max = struct.unpack_from('<f', agc_max_result, 1)[0]
+            # Read AGC settings
+            agc_enabled = bool(struct.unpack_from('<i', dev.read('PP_AGCONOFF'), 1)[0])
+            agc_max = struct.unpack_from('<f', dev.read('PP_AGCMAXGAIN'), 1)[0]
+            agc_current = struct.unpack_from('<f', dev.read('PP_AGCGAIN'), 1)[0]
+            agc_desired = struct.unpack_from('<f', dev.read('PP_AGCDESIREDLEVEL'), 1)[0]
+            agc_time = struct.unpack_from('<f', dev.read('PP_AGCTIME'), 1)[0]
+            agc_fasttime = struct.unpack_from('<f', dev.read('PP_AGCFASTTIME'), 1)[0]
 
-            agc_current_result = dev.read('PP_AGCGAIN')
-            agc_current = struct.unpack_from('<f', agc_current_result, 1)[0]
+            # Read Limiter settings
+            limiter_enabled = bool(struct.unpack_from('<i', dev.read('PP_LIMITONOFF'), 1)[0])
+            limiter_limit = struct.unpack_from('<f', dev.read('PP_LIMITPLIMIT'), 1)[0]
 
-            noise_suppress_result = dev.read('PP_MIN_NS')
-            noise_suppress = struct.unpack_from('<f', noise_suppress_result, 1)[0]
+            # Read Noise Suppression settings
+            noise_suppress = struct.unpack_from('<f', dev.read('PP_MIN_NS'), 1)[0]
+            noise_nonstat = struct.unpack_from('<f', dev.read('PP_MIN_NN'), 1)[0]
 
-            noise_nonstat_result = dev.read('PP_MIN_NN')
-            noise_nonstat = struct.unpack_from('<f', noise_nonstat_result, 1)[0]
+            # Read Echo Suppression settings
+            echo_enabled = bool(struct.unpack_from('<i', dev.read('PP_ECHOONOFF'), 1)[0])
+            gamma_e = struct.unpack_from('<f', dev.read('PP_GAMMA_E'), 1)[0]
+            gamma_etail = struct.unpack_from('<f', dev.read('PP_GAMMA_ETAIL'), 1)[0]
+            gamma_enl = struct.unpack_from('<f', dev.read('PP_GAMMA_ENL'), 1)[0]
+            nlatten_enabled = bool(struct.unpack_from('<i', dev.read('PP_NLATTENONOFF'), 1)[0])
+            dt_sensitive = struct.unpack_from('<i', dev.read('PP_DTSENSITIVE'), 1)[0]
 
-            agc_enabled_result = dev.read('PP_AGCONOFF')
-            agc_enabled = bool(struct.unpack_from('<i', agc_enabled_result, 1)[0])
-
-            echo_enabled_result = dev.read('PP_ECHOONOFF')
-            echo_enabled = bool(struct.unpack_from('<i', echo_enabled_result, 1)[0])
+            # Read AEC settings
+            hpf_mode = struct.unpack_from('<i', dev.read('AEC_HPFONOFF'), 1)[0]
+            asr_enabled = bool(struct.unpack_from('<i', dev.read('AEC_ASROUTONOFF'), 1)[0])
+            asr_gain = struct.unpack_from('<f', dev.read('AEC_ASROUTGAIN'), 1)[0]
+            fixed_beams_enabled = bool(struct.unpack_from('<i', dev.read('AEC_FIXEDBEAMSONOFF'), 1)[0])
 
             return jsonify({
                 'success': True,
@@ -198,13 +243,40 @@ def get_status():
                     }
                 },
                 'audio': {
+                    # Audio Manager
                     'mic_gain': round(mic_gain, 2),
+                    'ref_gain': round(ref_gain, 2),
+                    'sys_delay': sys_delay,
+
+                    # AGC
+                    'agc_enabled': agc_enabled,
                     'agc_max': round(agc_max, 2),
                     'agc_current': round(agc_current, 2),
-                    'agc_enabled': agc_enabled,
+                    'agc_desired': round(agc_desired, 6),
+                    'agc_time': round(agc_time, 2),
+                    'agc_fasttime': round(agc_fasttime, 2),
+
+                    # Limiter
+                    'limiter_enabled': limiter_enabled,
+                    'limiter_limit': round(limiter_limit, 6),
+
+                    # Noise Suppression
                     'noise_suppress_stationary': round(noise_suppress, 3),
                     'noise_suppress_nonstationary': round(noise_nonstat, 3),
-                    'echo_suppression': echo_enabled
+
+                    # Echo Suppression
+                    'echo_enabled': echo_enabled,
+                    'gamma_e': round(gamma_e, 2),
+                    'gamma_etail': round(gamma_etail, 2),
+                    'gamma_enl': round(gamma_enl, 2),
+                    'nlatten_enabled': nlatten_enabled,
+                    'dt_sensitive': dt_sensitive,
+
+                    # AEC
+                    'hpf_mode': hpf_mode,
+                    'asr_enabled': asr_enabled,
+                    'asr_gain': round(asr_gain, 2),
+                    'fixed_beams_enabled': fixed_beams_enabled
                 }
             })
     except Exception as e:
@@ -297,12 +369,228 @@ def set_agc_max():
 
 @app.route('/api/audio/noise_suppress', methods=['POST'])
 def set_noise_suppress():
-    """Set noise suppression level (0.0-1.0)"""
+    """Set noise suppression stationary level (0.0-1.0)"""
     try:
         level = float(request.json.get('level', 0.0))
         with device_lock:
             dev = get_device()
             dev.write('PP_MIN_NS', struct.pack('<f', level))
+        return jsonify({'success': True})
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route('/api/audio/ref_gain', methods=['POST'])
+def set_ref_gain():
+    """Set reference gain"""
+    try:
+        gain = float(request.json.get('gain', 8.0))
+        with device_lock:
+            dev = get_device()
+            dev.write('AUDIO_MGR_REF_GAIN', struct.pack('<f', gain))
+        return jsonify({'success': True})
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route('/api/audio/sys_delay', methods=['POST'])
+def set_sys_delay():
+    """Set system delay in samples"""
+    try:
+        delay = int(request.json.get('delay', 12))
+        with device_lock:
+            dev = get_device()
+            dev.write('AUDIO_MGR_SYS_DELAY', struct.pack('<i', delay))
+        return jsonify({'success': True})
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route('/api/audio/agc_desired_level', methods=['POST'])
+def set_agc_desired_level():
+    """Set AGC desired level (1e-8 to 1.0)"""
+    try:
+        level = float(request.json.get('level', 0.001))
+        with device_lock:
+            dev = get_device()
+            dev.write('PP_AGCDESIREDLEVEL', struct.pack('<f', level))
+        return jsonify({'success': True})
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route('/api/audio/agc_time', methods=['POST'])
+def set_agc_time():
+    """Set AGC time constant (0.5 to 4.0 seconds)"""
+    try:
+        time_val = float(request.json.get('time', 2.0))
+        with device_lock:
+            dev = get_device()
+            dev.write('PP_AGCTIME', struct.pack('<f', time_val))
+        return jsonify({'success': True})
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route('/api/audio/agc_fasttime', methods=['POST'])
+def set_agc_fasttime():
+    """Set AGC fast time constant (0.05 to 4.0 seconds)"""
+    try:
+        time_val = float(request.json.get('time', 0.5))
+        with device_lock:
+            dev = get_device()
+            dev.write('PP_AGCFASTTIME', struct.pack('<f', time_val))
+        return jsonify({'success': True})
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route('/api/audio/limiter_enable', methods=['POST'])
+def set_limiter_enable():
+    """Enable/disable limiter (0 or 1)"""
+    try:
+        enabled = int(request.json.get('enabled', 0))
+        with device_lock:
+            dev = get_device()
+            dev.write('PP_LIMITONOFF', struct.pack('<i', enabled))
+        return jsonify({'success': True})
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route('/api/audio/limiter_limit', methods=['POST'])
+def set_limiter_limit():
+    """Set limiter limit (1e-8 to 1.0)"""
+    try:
+        limit = float(request.json.get('limit', 0.1))
+        with device_lock:
+            dev = get_device()
+            dev.write('PP_LIMITPLIMIT', struct.pack('<f', limit))
+        return jsonify({'success': True})
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route('/api/audio/gamma_e', methods=['POST'])
+def set_gamma_e():
+    """Set echo over-subtraction factor (0.0 to 2.0)"""
+    try:
+        gamma = float(request.json.get('gamma', 1.0))
+        with device_lock:
+            dev = get_device()
+            dev.write('PP_GAMMA_E', struct.pack('<f', gamma))
+        return jsonify({'success': True})
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route('/api/audio/gamma_etail', methods=['POST'])
+def set_gamma_etail():
+    """Set echo tail over-subtraction factor (0.0 to 2.0)"""
+    try:
+        gamma = float(request.json.get('gamma', 1.0))
+        with device_lock:
+            dev = get_device()
+            dev.write('PP_GAMMA_ETAIL', struct.pack('<f', gamma))
+        return jsonify({'success': True})
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route('/api/audio/gamma_enl', methods=['POST'])
+def set_gamma_enl():
+    """Set non-linear echo over-subtraction factor (0.0 to 5.0)"""
+    try:
+        gamma = float(request.json.get('gamma', 1.5))
+        with device_lock:
+            dev = get_device()
+            dev.write('PP_GAMMA_ENL', struct.pack('<f', gamma))
+        return jsonify({'success': True})
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route('/api/audio/nlatten_enable', methods=['POST'])
+def set_nlatten_enable():
+    """Enable/disable non-linear attenuation (0 or 1)"""
+    try:
+        enabled = int(request.json.get('enabled', 1))
+        with device_lock:
+            dev = get_device()
+            dev.write('PP_NLATTENONOFF', struct.pack('<i', enabled))
+        return jsonify({'success': True})
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route('/api/audio/dt_sensitive', methods=['POST'])
+def set_dt_sensitive():
+    """Set doubletalk sensitivity (0-5 or 10-15)"""
+    try:
+        sensitivity = int(request.json.get('sensitivity', 3))
+        with device_lock:
+            dev = get_device()
+            dev.write('PP_DTSENSITIVE', struct.pack('<i', sensitivity))
+        return jsonify({'success': True})
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route('/api/audio/hpf_mode', methods=['POST'])
+def set_hpf_mode():
+    """Set high-pass filter mode (0-4)"""
+    try:
+        mode = int(request.json.get('mode', 0))
+        with device_lock:
+            dev = get_device()
+            dev.write('AEC_HPFONOFF', struct.pack('<i', mode))
+        return jsonify({'success': True})
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route('/api/audio/asr_enable', methods=['POST'])
+def set_asr_enable():
+    """Enable/disable ASR output (0 or 1)"""
+    try:
+        enabled = int(request.json.get('enabled', 0))
+        with device_lock:
+            dev = get_device()
+            dev.write('AEC_ASROUTONOFF', struct.pack('<i', enabled))
+        return jsonify({'success': True})
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route('/api/audio/asr_gain', methods=['POST'])
+def set_asr_gain():
+    """Set ASR output gain (0.0 to 1000.0)"""
+    try:
+        gain = float(request.json.get('gain', 1.0))
+        with device_lock:
+            dev = get_device()
+            dev.write('AEC_ASROUTGAIN', struct.pack('<f', gain))
+        return jsonify({'success': True})
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route('/api/audio/fixed_beams_enable', methods=['POST'])
+def set_fixed_beams_enable():
+    """Enable/disable fixed beams mode (0 or 1)"""
+    try:
+        enabled = int(request.json.get('enabled', 0))
+        with device_lock:
+            dev = get_device()
+            dev.write('AEC_FIXEDBEAMSONOFF', struct.pack('<i', enabled))
+        return jsonify({'success': True})
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route('/api/audio/agc_enable', methods=['POST'])
+def set_agc_enable():
+    """Enable/disable AGC (0 or 1)"""
+    try:
+        enabled = int(request.json.get('enabled', 1))
+        with device_lock:
+            dev = get_device()
+            dev.write('PP_AGCONOFF', struct.pack('<i', enabled))
+        return jsonify({'success': True})
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route('/api/audio/echo_enable', methods=['POST'])
+def set_echo_enable():
+    """Enable/disable echo suppression (0 or 1)"""
+    try:
+        enabled = int(request.json.get('enabled', 1))
+        with device_lock:
+            dev = get_device()
+            dev.write('PP_ECHOONOFF', struct.pack('<i', enabled))
         return jsonify({'success': True})
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)}), 500

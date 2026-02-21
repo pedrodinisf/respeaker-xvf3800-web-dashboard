@@ -645,14 +645,25 @@
 
         audio {
             width: 100%;
-            height: 40px;
+            height: 45px;
             margin-top: 10px;
             border-radius: 8px;
-            background: var(--bg-primary);
+            filter: invert(1) hue-rotate(180deg);
         }
 
+        /* Make audio controls visible on dark background */
         audio::-webkit-media-controls-panel {
-            background: var(--bg-primary);
+            background-color: rgba(255, 255, 255, 0.1);
+        }
+
+        audio::-webkit-media-controls-play-button,
+        audio::-webkit-media-controls-pause-button,
+        audio::-webkit-media-controls-mute-button,
+        audio::-webkit-media-controls-timeline,
+        audio::-webkit-media-controls-current-time-display,
+        audio::-webkit-media-controls-time-remaining-display,
+        audio::-webkit-media-controls-volume-slider {
+            filter: brightness(1.5);
         }
 
         .empty-state {
@@ -813,60 +824,213 @@
             </div>
 
             <!-- Audio Settings -->
-            <div class="card">
-                <h2>Audio Processing <span class="info-badge">Editable</span></h2>
+            <div class="card" style="grid-column: 1 / -1;">
+                <h2>Audio Processing <span class="info-badge">All Parameters</span></h2>
 
-                <div class="audio-param">
-                    <span class="audio-param-name">Mic Gain</span>
-                    <span class="audio-param-value" id="micGain">--</span>
-                    <div class="param-control">
-                        <input type="number" id="micGainInput" value="90" step="1" min="0" max="200">
-                        <button onclick="setMicGain()">Set</button>
+                <h3 style="margin: 12px 0 10px 0; font-size: 1em; color: var(--accent-cyan); letter-spacing: 1px;">AUDIO MANAGER</h3>
+
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(350px, 1fr)); gap: 10px;">
+                    <div class="audio-param">
+                        <span class="audio-param-name">Mic Gain</span>
+                        <span class="audio-param-value" id="micGain">--</span>
+                        <div class="param-control">
+                            <input type="number" id="micGainInput" value="90" step="1" min="0" max="200">
+                            <button onclick="setParam('mic_gain', 'micGainInput')">Set</button>
+                        </div>
                     </div>
-                </div>
 
-                <div class="audio-param">
-                    <span class="audio-param-name">AGC Max Gain</span>
-                    <span class="audio-param-value" id="agcMax">--</span>
-                    <div class="param-control">
-                        <input type="number" id="agcMaxInput" value="64" step="1" min="1" max="1000">
-                        <button onclick="setAgcMax()">Set</button>
+                    <div class="audio-param">
+                        <span class="audio-param-name">Ref Gain</span>
+                        <span class="audio-param-value" id="refGain">--</span>
+                        <div class="param-control">
+                            <input type="number" id="refGainInput" value="8" step="0.1" min="0" max="100">
+                            <button onclick="setParam('ref_gain', 'refGainInput')">Set</button>
+                        </div>
                     </div>
-                </div>
 
-                <div class="audio-param">
-                    <span class="audio-param-name">AGC Current</span>
-                    <span class="audio-param-value" id="agcCurrent">--</span>
-                    <span style="color: var(--text-secondary); font-size: 0.8em;">Read-only</span>
+                    <div class="audio-param">
+                        <span class="audio-param-name">Sys Delay (samples)</span>
+                        <span class="audio-param-value" id="sysDelay">--</span>
+                        <div class="param-control">
+                            <input type="number" id="sysDelayInput" value="12" step="1" min="0" max="100">
+                            <button onclick="setParam('sys_delay', 'sysDelayInput')">Set</button>
+                        </div>
+                    </div>
                 </div>
 
                 <div class="section-divider"></div>
+                <h3 style="margin: 12px 0 10px 0; font-size: 1em; color: var(--accent-cyan); letter-spacing: 1px;">AUTOMATIC GAIN CONTROL (AGC)</h3>
 
-                <div class="audio-param">
-                    <span class="audio-param-name">Noise Suppress (Stat)</span>
-                    <span class="audio-param-value" id="noiseSuppressStat">--</span>
-                    <div class="param-control">
-                        <input type="number" id="noiseSuppressInput" value="0" step="0.01" min="0" max="1">
-                        <button onclick="setNoiseSuppression()">Set</button>
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(350px, 1fr)); gap: 10px;">
+                    <div class="audio-param">
+                        <span class="audio-param-name">AGC Enabled</span>
+                        <div class="toggle-switch" id="agcToggle" onclick="toggleParam('agc_enabled', 'agcToggle')"></div>
+                    </div>
+
+                    <div class="audio-param">
+                        <span class="audio-param-name">Max Gain (1-1000)</span>
+                        <span class="audio-param-value" id="agcMax">--</span>
+                        <div class="param-control">
+                            <input type="number" id="agcMaxInput" value="64" step="1" min="1" max="1000">
+                            <button onclick="setParam('agc_max', 'agcMaxInput')">Set</button>
+                        </div>
+                    </div>
+
+                    <div class="audio-param">
+                        <span class="audio-param-name">Current Gain</span>
+                        <span class="audio-param-value" id="agcCurrent">--</span>
+                        <span style="color: var(--text-secondary); font-size: 0.8em;">Read-only</span>
+                    </div>
+
+                    <div class="audio-param">
+                        <span class="audio-param-name">Desired Level (1e-8 to 1)</span>
+                        <span class="audio-param-value" id="agcDesired">--</span>
+                        <div class="param-control">
+                            <input type="number" id="agcDesiredInput" value="0.001" step="0.0001" min="0.00000001" max="1">
+                            <button onclick="setParam('agc_desired_level', 'agcDesiredInput')">Set</button>
+                        </div>
+                    </div>
+
+                    <div class="audio-param">
+                        <span class="audio-param-name">Time Const (0.5-4.0s)</span>
+                        <span class="audio-param-value" id="agcTime">--</span>
+                        <div class="param-control">
+                            <input type="number" id="agcTimeInput" value="2.0" step="0.1" min="0.5" max="4.0">
+                            <button onclick="setParam('agc_time', 'agcTimeInput')">Set</button>
+                        </div>
+                    </div>
+
+                    <div class="audio-param">
+                        <span class="audio-param-name">Fast Time (0.05-4.0s)</span>
+                        <span class="audio-param-value" id="agcFasttime">--</span>
+                        <div class="param-control">
+                            <input type="number" id="agcFasttimeInput" value="0.5" step="0.05" min="0.05" max="4.0">
+                            <button onclick="setParam('agc_fasttime', 'agcFasttimeInput')">Set</button>
+                        </div>
                     </div>
                 </div>
 
-                <div class="audio-param">
-                    <span class="audio-param-name">Noise Suppress (Non-stat)</span>
-                    <span class="audio-param-value" id="noiseSuppressNonstat">--</span>
-                    <span style="color: var(--text-secondary); font-size: 0.8em;">Read-only</span>
+                <div class="section-divider"></div>
+                <h3 style="margin: 12px 0 10px 0; font-size: 1em; color: var(--accent-cyan); letter-spacing: 1px;">LIMITER</h3>
+
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(350px, 1fr)); gap: 10px;">
+                    <div class="audio-param">
+                        <span class="audio-param-name">Limiter Enabled</span>
+                        <div class="toggle-switch" id="limiterToggle" onclick="toggleParam('limiter_enable', 'limiterToggle')"></div>
+                    </div>
+
+                    <div class="audio-param">
+                        <span class="audio-param-name">Limit (1e-8 to 1.0)</span>
+                        <span class="audio-param-value" id="limiterLimit">--</span>
+                        <div class="param-control">
+                            <input type="number" id="limiterLimitInput" value="0.1" step="0.001" min="0.00000001" max="1">
+                            <button onclick="setParam('limiter_limit', 'limiterLimitInput')">Set</button>
+                        </div>
+                    </div>
                 </div>
 
                 <div class="section-divider"></div>
+                <h3 style="margin: 12px 0 10px 0; font-size: 1em; color: var(--accent-cyan); letter-spacing: 1px;">NOISE SUPPRESSION</h3>
 
-                <div class="audio-param">
-                    <span class="audio-param-name">AGC Enabled</span>
-                    <div class="toggle-switch" id="agcToggle"></div>
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(350px, 1fr)); gap: 10px;">
+                    <div class="audio-param">
+                        <span class="audio-param-name">Stationary (0-1)</span>
+                        <span class="audio-param-value" id="noiseSuppressStat">--</span>
+                        <div class="param-control">
+                            <input type="number" id="noiseSuppressStatInput" value="0" step="0.01" min="0" max="1">
+                            <button onclick="setParam('noise_suppress', 'noiseSuppressStatInput')">Set</button>
+                        </div>
+                    </div>
+
+                    <div class="audio-param">
+                        <span class="audio-param-name">Non-stationary</span>
+                        <span class="audio-param-value" id="noiseSuppressNonstat">--</span>
+                        <span style="color: var(--text-secondary); font-size: 0.8em;">Read-only</span>
+                    </div>
                 </div>
 
-                <div class="audio-param">
-                    <span class="audio-param-name">Echo Suppression</span>
-                    <div class="toggle-switch" id="echoToggle"></div>
+                <div class="section-divider"></div>
+                <h3 style="margin: 12px 0 10px 0; font-size: 1em; color: var(--accent-cyan); letter-spacing: 1px;">ECHO SUPPRESSION</h3>
+
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(350px, 1fr)); gap: 10px;">
+                    <div class="audio-param">
+                        <span class="audio-param-name">Echo Enabled</span>
+                        <div class="toggle-switch" id="echoToggle" onclick="toggleParam('echo_enable', 'echoToggle')"></div>
+                    </div>
+
+                    <div class="audio-param">
+                        <span class="audio-param-name">Gamma E (0-2)</span>
+                        <span class="audio-param-value" id="gammaE">--</span>
+                        <div class="param-control">
+                            <input type="number" id="gammaEInput" value="1.0" step="0.1" min="0" max="2">
+                            <button onclick="setParam('gamma_e', 'gammaEInput')">Set</button>
+                        </div>
+                    </div>
+
+                    <div class="audio-param">
+                        <span class="audio-param-name">Gamma E Tail (0-2)</span>
+                        <span class="audio-param-value" id="gammaEtail">--</span>
+                        <div class="param-control">
+                            <input type="number" id="gammaEtailInput" value="1.0" step="0.1" min="0" max="2">
+                            <button onclick="setParam('gamma_etail', 'gammaEtailInput')">Set</button>
+                        </div>
+                    </div>
+
+                    <div class="audio-param">
+                        <span class="audio-param-name">Gamma ENL (0-5)</span>
+                        <span class="audio-param-value" id="gammaEnl">--</span>
+                        <div class="param-control">
+                            <input type="number" id="gammaEnlInput" value="1.5" step="0.1" min="0" max="5">
+                            <button onclick="setParam('gamma_enl', 'gammaEnlInput')">Set</button>
+                        </div>
+                    </div>
+
+                    <div class="audio-param">
+                        <span class="audio-param-name">NL Atten Enabled</span>
+                        <div class="toggle-switch on" id="nlattenToggle" onclick="toggleParam('nlatten_enable', 'nlattenToggle')"></div>
+                    </div>
+
+                    <div class="audio-param">
+                        <span class="audio-param-name">DT Sensitive (0-5,10-15)</span>
+                        <span class="audio-param-value" id="dtSensitive">--</span>
+                        <div class="param-control">
+                            <input type="number" id="dtSensitiveInput" value="3" step="1" min="0" max="15">
+                            <button onclick="setParam('dt_sensitive', 'dtSensitiveInput')">Set</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="section-divider"></div>
+                <h3 style="margin: 12px 0 10px 0; font-size: 1em; color: var(--accent-cyan); letter-spacing: 1px;">AEC SETTINGS</h3>
+
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(350px, 1fr)); gap: 10px;">
+                    <div class="audio-param">
+                        <span class="audio-param-name">HPF Mode (0-4)</span>
+                        <span class="audio-param-value" id="hpfMode">--</span>
+                        <div class="param-control">
+                            <input type="number" id="hpfModeInput" value="0" step="1" min="0" max="4">
+                            <button onclick="setParam('hpf_mode', 'hpfModeInput')">Set</button>
+                        </div>
+                    </div>
+
+                    <div class="audio-param">
+                        <span class="audio-param-name">ASR Output</span>
+                        <div class="toggle-switch" id="asrToggle" onclick="toggleParam('asr_enable', 'asrToggle')"></div>
+                    </div>
+
+                    <div class="audio-param">
+                        <span class="audio-param-name">ASR Gain (0-1000)</span>
+                        <span class="audio-param-value" id="asrGain">--</span>
+                        <div class="param-control">
+                            <input type="number" id="asrGainInput" value="1.0" step="0.1" min="0" max="1000">
+                            <button onclick="setParam('asr_gain', 'asrGainInput')">Set</button>
+                        </div>
+                    </div>
+
+                    <div class="audio-param">
+                        <span class="audio-param-name">Fixed Beams</span>
+                        <div class="toggle-switch" id="fixedBeamsToggle" onclick="toggleParam('fixed_beams_enable', 'fixedBeamsToggle')"></div>
+                    </div>
                 </div>
             </div>
 
@@ -1143,14 +1307,40 @@
                     });
 
                     // Update audio settings
+                    // Audio Manager
                     document.getElementById('micGain').textContent = data.audio.mic_gain;
+                    document.getElementById('refGain').textContent = data.audio.ref_gain;
+                    document.getElementById('sysDelay').textContent = data.audio.sys_delay;
+
+                    // AGC
+                    document.getElementById('agcToggle').classList.toggle('on', data.audio.agc_enabled);
                     document.getElementById('agcMax').textContent = data.audio.agc_max;
                     document.getElementById('agcCurrent').textContent = data.audio.agc_current;
+                    document.getElementById('agcDesired').textContent = data.audio.agc_desired;
+                    document.getElementById('agcTime').textContent = data.audio.agc_time;
+                    document.getElementById('agcFasttime').textContent = data.audio.agc_fasttime;
+
+                    // Limiter
+                    document.getElementById('limiterToggle').classList.toggle('on', data.audio.limiter_enabled);
+                    document.getElementById('limiterLimit').textContent = data.audio.limiter_limit;
+
+                    // Noise Suppression
                     document.getElementById('noiseSuppressStat').textContent = data.audio.noise_suppress_stationary;
                     document.getElementById('noiseSuppressNonstat').textContent = data.audio.noise_suppress_nonstationary;
 
-                    document.getElementById('agcToggle').classList.toggle('on', data.audio.agc_enabled);
-                    document.getElementById('echoToggle').classList.toggle('on', data.audio.echo_suppression);
+                    // Echo Suppression
+                    document.getElementById('echoToggle').classList.toggle('on', data.audio.echo_enabled);
+                    document.getElementById('gammaE').textContent = data.audio.gamma_e;
+                    document.getElementById('gammaEtail').textContent = data.audio.gamma_etail;
+                    document.getElementById('gammaEnl').textContent = data.audio.gamma_enl;
+                    document.getElementById('nlattenToggle').classList.toggle('on', data.audio.nlatten_enabled);
+                    document.getElementById('dtSensitive').textContent = data.audio.dt_sensitive;
+
+                    // AEC
+                    document.getElementById('hpfMode').textContent = data.audio.hpf_mode;
+                    document.getElementById('asrToggle').classList.toggle('on', data.audio.asr_enabled);
+                    document.getElementById('asrGain').textContent = data.audio.asr_gain;
+                    document.getElementById('fixedBeamsToggle').classList.toggle('on', data.audio.fixed_beams_enabled);
 
                     // Update GPIO
                     document.getElementById('gpioInputs').innerHTML = Object.entries(data.gpio.inputs).map(([name, value]) => `
@@ -1229,30 +1419,66 @@
             });
         }
 
-        function setMicGain() {
-            const gain = parseFloat(document.getElementById('micGainInput').value);
-            fetch('/api/audio/mic_gain', {
+        // Generic parameter setter
+        const paramMap = {
+            'mic_gain': {endpoint: '/api/audio/mic_gain', key: 'gain'},
+            'ref_gain': {endpoint: '/api/audio/ref_gain', key: 'gain'},
+            'sys_delay': {endpoint: '/api/audio/sys_delay', key: 'delay'},
+            'agc_max': {endpoint: '/api/audio/agc_max', key: 'gain'},
+            'agc_desired_level': {endpoint: '/api/audio/agc_desired_level', key: 'level'},
+            'agc_time': {endpoint: '/api/audio/agc_time', key: 'time'},
+            'agc_fasttime': {endpoint: '/api/audio/agc_fasttime', key: 'time'},
+            'limiter_limit': {endpoint: '/api/audio/limiter_limit', key: 'limit'},
+            'noise_suppress': {endpoint: '/api/audio/noise_suppress', key: 'level'},
+            'gamma_e': {endpoint: '/api/audio/gamma_e', key: 'gamma'},
+            'gamma_etail': {endpoint: '/api/audio/gamma_etail', key: 'gamma'},
+            'gamma_enl': {endpoint: '/api/audio/gamma_enl', key: 'gamma'},
+            'dt_sensitive': {endpoint: '/api/audio/dt_sensitive', key: 'sensitivity'},
+            'hpf_mode': {endpoint: '/api/audio/hpf_mode', key: 'mode'},
+            'asr_gain': {endpoint: '/api/audio/asr_gain', key: 'gain'},
+        };
+
+        const toggleMap = {
+            'agc_enabled': '/api/audio/agc_enable',
+            'limiter_enable': '/api/audio/limiter_enable',
+            'echo_enable': '/api/audio/echo_enable',
+            'nlatten_enable': '/api/audio/nlatten_enable',
+            'asr_enable': '/api/audio/asr_enable',
+            'fixed_beams_enable': '/api/audio/fixed_beams_enable'
+        };
+
+        function setParam(paramName, inputId) {
+            const config = paramMap[paramName];
+            if (!config) return;
+
+            const value = parseFloat(document.getElementById(inputId).value);
+            const payload = {};
+            payload[config.key] = value;
+
+            fetch(config.endpoint, {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({gain})
+                body: JSON.stringify(payload)
+            }).then(() => {
+                console.log(`Set ${paramName} to ${value}`);
+                setTimeout(updateStatus, 200);  // Refresh after 200ms
             });
         }
 
-        function setAgcMax() {
-            const gain = parseFloat(document.getElementById('agcMaxInput').value);
-            fetch('/api/audio/agc_max', {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({gain})
-            });
-        }
+        function toggleParam(paramName, toggleId) {
+            const endpoint = toggleMap[paramName];
+            if (!endpoint) return;
 
-        function setNoiseSuppression() {
-            const level = parseFloat(document.getElementById('noiseSuppressInput').value);
-            fetch('/api/audio/noise_suppress', {
+            const toggle = document.getElementById(toggleId);
+            const newState = !toggle.classList.contains('on');
+
+            fetch(endpoint, {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({level})
+                body: JSON.stringify({enabled: newState ? 1 : 0})
+            }).then(() => {
+                console.log(`Toggle ${paramName} to ${newState}`);
+                setTimeout(updateStatus, 200);  // Refresh after 200ms
             });
         }
 
