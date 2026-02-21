@@ -3,101 +3,229 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ReSpeaker XVF3800 Control Dashboard v2</title>
+    <title>ReSpeaker XVF3800 Control Dashboard</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: #fff;
-            padding: 15px;
-            overflow-x: hidden;
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
         }
 
-        .container { max-width: 1600px; margin: 0 auto; }
+        :root {
+            --bg-primary: #0a0a0a;
+            --bg-secondary: #141414;
+            --bg-card: #1a1a1a;
+            --accent-cyan: #00d9ff;
+            --accent-blue: #0066ff;
+            --accent-purple: #9d4edd;
+            --accent-green: #00ff88;
+            --accent-red: #ff006e;
+            --text-primary: #ffffff;
+            --text-secondary: #a0a0a0;
+            --border-color: #2a2a2a;
+        }
+
+        body {
+            font-family: 'Rajdhani', sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            padding: 20px;
+            overflow-x: hidden;
+            min-height: 100vh;
+            background-image:
+                radial-gradient(ellipse at top, rgba(0, 102, 255, 0.1) 0%, transparent 50%),
+                radial-gradient(ellipse at bottom, rgba(157, 78, 221, 0.1) 0%, transparent 50%);
+        }
+
+        .container {
+            max-width: 1800px;
+            margin: 0 auto;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 40px;
+            padding: 30px 0;
+            position: relative;
+        }
 
         h1 {
-            text-align: center;
-            margin-bottom: 5px;
-            font-size: 2.2em;
-            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+            font-family: 'Rajdhani', sans-serif;
+            font-size: 3.5em;
+            font-weight: 700;
+            letter-spacing: 4px;
+            text-transform: uppercase;
+            background: linear-gradient(135deg, var(--accent-cyan) 0%, var(--accent-blue) 50%, var(--accent-purple) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 10px;
+            text-shadow: 0 0 40px rgba(0, 217, 255, 0.3);
         }
 
         .subtitle {
-            text-align: center;
-            margin-bottom: 20px;
-            opacity: 0.9;
-            font-size: 0.95em;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.9em;
+            color: var(--text-secondary);
+            letter-spacing: 2px;
+            text-transform: uppercase;
         }
 
         .grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(380px, 1fr));
-            gap: 15px;
-            margin-bottom: 15px;
+            grid-template-columns: repeat(auto-fit, minmax(450px, 1fr));
+            gap: 25px;
+            margin-bottom: 25px;
+        }
+
+        @media (max-width: 768px) {
+            .grid {
+                grid-template-columns: 1fr;
+            }
         }
 
         .card {
-            background: rgba(255, 255, 255, 0.12);
-            backdrop-filter: blur(12px);
-            border-radius: 12px;
-            padding: 20px;
-            box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
-            border: 1px solid rgba(255, 255, 255, 0.18);
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            padding: 25px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: linear-gradient(90deg, var(--accent-cyan), var(--accent-blue), var(--accent-purple));
+            opacity: 0.5;
+        }
+
+        .card:hover {
+            border-color: var(--accent-cyan);
+            box-shadow: 0 8px 48px rgba(0, 217, 255, 0.2);
+            transform: translateY(-2px);
         }
 
         .card h2 {
-            margin-bottom: 15px;
-            font-size: 1.3em;
-            border-bottom: 2px solid rgba(255,255,255,0.3);
-            padding-bottom: 8px;
+            font-family: 'Rajdhani', sans-serif;
+            font-size: 1.6em;
+            font-weight: 600;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            margin-bottom: 20px;
+            color: var(--accent-cyan);
             display: flex;
             align-items: center;
-            gap: 8px;
+            gap: 12px;
         }
 
+        .card h2::before {
+            content: '■';
+            color: var(--accent-cyan);
+            font-size: 0.6em;
+        }
+
+        /* DoA Radar Styles */
         #doaCanvas {
             width: 100%;
-            max-width: 350px;
-            height: 350px;
+            max-width: 400px;
+            height: 400px;
             margin: 0 auto;
             display: block;
-            background: rgba(0,0,0,0.2);
+            background: radial-gradient(circle, rgba(0, 217, 255, 0.05) 0%, transparent 70%);
             border-radius: 50%;
+            border: 2px solid var(--border-color);
         }
 
+        .doa-angle {
+            text-align: center;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 3.5em;
+            font-weight: 700;
+            margin: 20px 0;
+            color: var(--accent-cyan);
+            text-shadow: 0 0 20px rgba(0, 217, 255, 0.5);
+            letter-spacing: 4px;
+        }
+
+        .speech-indicator {
+            display: inline-block;
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            background: var(--accent-red);
+            margin-left: 12px;
+            transition: all 0.3s;
+            box-shadow: 0 0 10px var(--accent-red);
+        }
+
+        .speech-indicator.active {
+            background: var(--accent-green);
+            box-shadow: 0 0 20px var(--accent-green);
+            animation: pulse 1.5s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.3); opacity: 0.8; }
+        }
+
+        /* Beam Styles */
         .beam-section {
-            margin-bottom: 12px;
-            background: rgba(0,0,0,0.15);
-            padding: 12px;
-            border-radius: 8px;
-            border-left: 3px solid #4ade80;
+            margin-bottom: 15px;
+            background: var(--bg-secondary);
+            padding: 15px;
+            border-radius: 10px;
+            border-left: 3px solid var(--accent-green);
+            transition: all 0.3s;
+        }
+
+        .beam-section:hover {
+            background: rgba(0, 255, 136, 0.05);
+            border-left-color: var(--accent-cyan);
         }
 
         .beam-header {
             display: flex;
             justify-content: space-between;
-            margin-bottom: 8px;
-            font-weight: 500;
+            align-items: center;
+            margin-bottom: 10px;
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        .beam-label {
+            font-size: 0.95em;
+            color: var(--text-primary);
+            letter-spacing: 1px;
         }
 
         .beam-azimuth {
-            color: #a78bfa;
+            color: var(--accent-purple);
             font-size: 0.9em;
+            font-weight: 600;
         }
 
         .beam-energy {
-            color: #4ade80;
-            font-weight: bold;
+            color: var(--accent-green);
+            font-weight: 700;
+            font-size: 1.1em;
         }
 
         .sparkline-container {
-            height: 40px;
-            background: rgba(0,0,0,0.2);
-            border-radius: 4px;
+            height: 50px;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 6px;
             overflow: hidden;
-            position: relative;
+            border: 1px solid var(--border-color);
         }
 
         .sparkline {
@@ -105,112 +233,153 @@
             height: 100%;
         }
 
+        /* LED Control Styles */
         .control-group {
-            margin-bottom: 15px;
+            margin-bottom: 20px;
         }
 
         .control-group label {
             display: block;
-            margin-bottom: 6px;
-            font-weight: 500;
-            font-size: 0.9em;
+            margin-bottom: 10px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.85em;
+            color: var(--text-secondary);
+            letter-spacing: 1px;
+            text-transform: uppercase;
         }
 
         button {
-            background: rgba(255,255,255,0.2);
-            border: 1px solid rgba(255,255,255,0.3);
-            color: white;
-            padding: 8px 16px;
-            border-radius: 6px;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            color: var(--text-primary);
+            padding: 10px 20px;
+            border-radius: 8px;
             cursor: pointer;
-            font-size: 0.9em;
-            margin: 3px;
-            transition: all 0.2s;
-            font-weight: 500;
+            font-family: 'Rajdhani', sans-serif;
+            font-size: 0.95em;
+            font-weight: 600;
+            margin: 4px;
+            transition: all 0.3s;
+            letter-spacing: 1px;
+            text-transform: uppercase;
         }
 
         button:hover {
-            background: rgba(255,255,255,0.3);
-            transform: translateY(-1px);
+            background: var(--bg-card);
+            border-color: var(--accent-cyan);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 217, 255, 0.3);
         }
 
         button.active {
-            background: #4ade80;
-            border-color: #22c55e;
-            box-shadow: 0 0 12px rgba(74, 222, 128, 0.5);
+            background: linear-gradient(135deg, var(--accent-cyan), var(--accent-blue));
+            border-color: var(--accent-cyan);
+            box-shadow: 0 0 20px rgba(0, 217, 255, 0.5);
         }
 
         input[type="range"] {
             width: 100%;
-            height: 6px;
-            background: rgba(255,255,255,0.2);
+            height: 8px;
+            background: var(--bg-secondary);
             outline: none;
-            border-radius: 3px;
+            border-radius: 4px;
+            border: 1px solid var(--border-color);
             -webkit-appearance: none;
         }
 
         input[type="range"]::-webkit-slider-thumb {
             -webkit-appearance: none;
             appearance: none;
-            width: 18px;
-            height: 18px;
-            background: #4ade80;
+            width: 20px;
+            height: 20px;
+            background: var(--accent-cyan);
             cursor: pointer;
             border-radius: 50%;
-            box-shadow: 0 0 8px rgba(74, 222, 128, 0.6);
+            box-shadow: 0 0 12px var(--accent-cyan);
+            transition: all 0.3s;
+        }
+
+        input[type="range"]::-webkit-slider-thumb:hover {
+            transform: scale(1.2);
+            box-shadow: 0 0 20px var(--accent-cyan);
         }
 
         input[type="range"]::-moz-range-thumb {
-            width: 18px;
-            height: 18px;
-            background: #4ade80;
+            width: 20px;
+            height: 20px;
+            background: var(--accent-cyan);
             cursor: pointer;
             border-radius: 50%;
             border: none;
+            box-shadow: 0 0 12px var(--accent-cyan);
         }
 
         input[type="color"] {
             width: 100%;
-            height: 45px;
-            border: 2px solid rgba(255,255,255,0.3);
-            border-radius: 6px;
+            height: 50px;
+            border: 2px solid var(--border-color);
+            border-radius: 8px;
             cursor: pointer;
             background: transparent;
+            transition: all 0.3s;
+        }
+
+        input[type="color"]:hover {
+            border-color: var(--accent-cyan);
+            box-shadow: 0 0 16px rgba(0, 217, 255, 0.3);
         }
 
         input[type="number"] {
             width: 100%;
-            padding: 8px;
-            background: rgba(255,255,255,0.15);
-            border: 1px solid rgba(255,255,255,0.3);
-            border-radius: 6px;
-            color: white;
+            padding: 10px;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            color: var(--text-primary);
+            font-family: 'JetBrains Mono', monospace;
             font-size: 0.95em;
+            transition: all 0.3s;
         }
 
+        input[type="number"]:focus {
+            outline: none;
+            border-color: var(--accent-cyan);
+            box-shadow: 0 0 12px rgba(0, 217, 255, 0.3);
+        }
+
+        /* Audio Parameter Styles */
         .audio-param {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 10px;
-            background: rgba(255,255,255,0.08);
-            border-radius: 6px;
-            margin-bottom: 8px;
-            border-left: 3px solid #a78bfa;
+            padding: 12px;
+            background: var(--bg-secondary);
+            border-radius: 8px;
+            margin-bottom: 10px;
+            border-left: 3px solid var(--accent-purple);
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.9em;
+            transition: all 0.3s;
+        }
+
+        .audio-param:hover {
+            background: rgba(157, 78, 221, 0.05);
+            border-left-color: var(--accent-cyan);
         }
 
         .audio-param-name {
             flex: 1;
-            font-weight: 500;
-            font-size: 0.9em;
+            color: var(--text-secondary);
+            letter-spacing: 1px;
         }
 
         .audio-param-value {
-            font-weight: bold;
-            color: #4ade80;
+            font-weight: 700;
+            color: var(--accent-cyan);
             margin-right: 10px;
-            min-width: 60px;
+            min-width: 70px;
             text-align: right;
+            font-size: 1.1em;
         }
 
         .param-control {
@@ -220,149 +389,258 @@
         }
 
         .param-control input {
-            width: 80px;
+            width: 90px;
         }
 
         .param-control button {
-            padding: 6px 12px;
+            padding: 8px 16px;
             margin: 0;
         }
 
-        .speech-indicator {
-            display: inline-block;
-            width: 12px;
-            height: 12px;
-            border-radius: 50%;
-            background: #ef4444;
-            margin-left: 8px;
-            transition: all 0.3s;
-            box-shadow: 0 0 0 rgba(239, 68, 68, 0.4);
-        }
-
-        .speech-indicator.active {
-            background: #22c55e;
-            box-shadow: 0 0 12px rgba(34, 197, 94, 0.8);
-            animation: pulse 1.5s infinite;
-        }
-
-        @keyframes pulse {
-            0%, 100% { transform: scale(1); }
-            50% { transform: scale(1.2); }
-        }
-
-        .doa-angle {
-            text-align: center;
-            font-size: 2.5em;
-            font-weight: bold;
-            margin: 15px 0;
-            text-shadow: 2px 2px 6px rgba(0,0,0,0.4);
-        }
-
-        .gpio-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-            gap: 8px;
-        }
-
-        .gpio-item {
-            background: rgba(255,255,255,0.1);
-            padding: 10px;
-            border-radius: 6px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            font-size: 0.85em;
-        }
-
-        .gpio-status {
-            width: 16px;
-            height: 16px;
-            border-radius: 50%;
-            background: #ef4444;
-            box-shadow: 0 0 8px rgba(239, 68, 68, 0.6);
-            transition: all 0.3s;
-        }
-
-        .gpio-status.on {
-            background: #22c55e;
-            box-shadow: 0 0 8px rgba(34, 197, 94, 0.6);
-        }
-
-        .section-divider {
-            height: 1px;
-            background: rgba(255,255,255,0.2);
-            margin: 15px 0;
-        }
-
-        .info-badge {
-            display: inline-block;
-            background: rgba(167, 139, 250, 0.3);
-            padding: 3px 8px;
-            border-radius: 12px;
-            font-size: 0.75em;
-            margin-left: 8px;
-            border: 1px solid rgba(167, 139, 250, 0.5);
-        }
-
+        /* Toggle Switch */
         .toggle-switch {
             display: inline-block;
-            width: 50px;
-            height: 24px;
-            background: rgba(239, 68, 68, 0.3);
-            border-radius: 12px;
+            width: 56px;
+            height: 28px;
+            background: var(--bg-primary);
+            border-radius: 14px;
             position: relative;
             cursor: pointer;
-            border: 2px solid #ef4444;
+            border: 2px solid var(--accent-red);
             transition: all 0.3s;
         }
 
         .toggle-switch.on {
-            background: rgba(34, 197, 94, 0.3);
-            border-color: #22c55e;
+            background: rgba(0, 255, 136, 0.2);
+            border-color: var(--accent-green);
+            box-shadow: 0 0 12px rgba(0, 255, 136, 0.3);
         }
 
         .toggle-switch::after {
             content: '';
             position: absolute;
-            width: 16px;
-            height: 16px;
-            background: white;
+            width: 20px;
+            height: 20px;
+            background: var(--accent-red);
             border-radius: 50%;
             top: 2px;
             left: 2px;
             transition: all 0.3s;
+            box-shadow: 0 0 8px rgba(255, 0, 110, 0.5);
         }
 
         .toggle-switch.on::after {
-            left: 28px;
+            left: 30px;
+            background: var(--accent-green);
+            box-shadow: 0 0 12px rgba(0, 255, 136, 0.5);
+        }
+
+        /* GPIO Styles */
+        .gpio-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+            gap: 10px;
+        }
+
+        .gpio-item {
+            background: var(--bg-secondary);
+            padding: 12px;
+            border-radius: 8px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.8em;
+            letter-spacing: 1px;
+            border: 1px solid var(--border-color);
+            transition: all 0.3s;
+        }
+
+        .gpio-item:hover {
+            background: var(--bg-card);
+            border-color: var(--accent-cyan);
+        }
+
+        .gpio-status {
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: var(--accent-red);
+            box-shadow: 0 0 10px var(--accent-red);
+            transition: all 0.3s;
+        }
+
+        .gpio-status.on {
+            background: var(--accent-green);
+            box-shadow: 0 0 12px var(--accent-green);
+        }
+
+        /* Raw Data Monitor */
+        .raw-data-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 10px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.85em;
+        }
+
+        .raw-data-item {
+            background: var(--bg-secondary);
+            padding: 12px;
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+            transition: all 0.3s;
+        }
+
+        .raw-data-item:hover {
+            background: var(--bg-card);
+            border-color: var(--accent-cyan);
+        }
+
+        .raw-data-label {
+            color: var(--text-secondary);
+            font-size: 0.75em;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            margin-bottom: 5px;
+        }
+
+        .raw-data-value {
+            color: var(--accent-cyan);
+            font-size: 1.3em;
+            font-weight: 700;
+            letter-spacing: 1px;
+        }
+
+        .raw-data-value.updating {
+            animation: valueUpdate 0.3s ease;
+        }
+
+        @keyframes valueUpdate {
+            0% { color: var(--accent-green); transform: scale(1.05); }
+            100% { color: var(--accent-cyan); transform: scale(1); }
+        }
+
+        /* Divider */
+        .section-divider {
+            height: 1px;
+            background: linear-gradient(90deg, transparent, var(--border-color), transparent);
+            margin: 20px 0;
+        }
+
+        /* Badge */
+        .info-badge {
+            display: inline-block;
+            background: rgba(0, 217, 255, 0.15);
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 0.7em;
+            margin-left: 10px;
+            border: 1px solid var(--accent-cyan);
+            letter-spacing: 1px;
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        /* Responsive adjustments */
+        @media (max-width: 768px) {
+            h1 {
+                font-size: 2.5em;
+                letter-spacing: 2px;
+            }
+
+            .doa-angle {
+                font-size: 2.5em;
+            }
+
+            #doaCanvas {
+                max-width: 100%;
+                height: 350px;
+            }
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>🎤 ReSpeaker XVF3800 Control Dashboard</h1>
-        <p class="subtitle">Real-time Direction of Arrival • Advanced Beam Visualization • Full Audio Control</p>
+        <header>
+            <h1>ReSpeaker XVF3800</h1>
+            <p class="subtitle">Advanced Audio Intelligence System</p>
+        </header>
 
         <div class="grid">
             <!-- Direction of Arrival -->
             <div class="card">
-                <h2>🎯 Direction of Arrival (DoA)</h2>
-                <canvas id="doaCanvas" width="350" height="350"></canvas>
+                <h2>Direction of Arrival</h2>
+                <canvas id="doaCanvas" width="400" height="400"></canvas>
                 <div class="doa-angle">
                     <span id="doaAngle">0</span>°
                     <span class="speech-indicator" id="speechIndicator"></span>
                 </div>
             </div>
 
-            <!-- Beam Energy Levels with History -->
+            <!-- Raw Data Monitor -->
             <div class="card">
-                <h2>📊 Beam Energy & History <span class="info-badge">50 samples</span></h2>
+                <h2>Raw Data Monitor <span class="info-badge">Live Feed</span></h2>
+                <div class="raw-data-grid">
+                    <div class="raw-data-item">
+                        <div class="raw-data-label">DoA Angle</div>
+                        <div class="raw-data-value" id="rawDoaAngle">---</div>
+                    </div>
+                    <div class="raw-data-item">
+                        <div class="raw-data-label">Speech Detected</div>
+                        <div class="raw-data-value" id="rawSpeech">---</div>
+                    </div>
+                    <div class="raw-data-item">
+                        <div class="raw-data-label">Beam 0 Azimuth</div>
+                        <div class="raw-data-value" id="rawBeam0Azi">---</div>
+                    </div>
+                    <div class="raw-data-item">
+                        <div class="raw-data-label">Beam 0 Energy</div>
+                        <div class="raw-data-value" id="rawBeam0Energy">---</div>
+                    </div>
+                    <div class="raw-data-item">
+                        <div class="raw-data-label">Beam 1 Azimuth</div>
+                        <div class="raw-data-value" id="rawBeam1Azi">---</div>
+                    </div>
+                    <div class="raw-data-item">
+                        <div class="raw-data-label">Beam 1 Energy</div>
+                        <div class="raw-data-value" id="rawBeam1Energy">---</div>
+                    </div>
+                    <div class="raw-data-item">
+                        <div class="raw-data-label">Beam 2 Azimuth</div>
+                        <div class="raw-data-value" id="rawBeam2Azi">---</div>
+                    </div>
+                    <div class="raw-data-item">
+                        <div class="raw-data-label">Beam 2 Energy</div>
+                        <div class="raw-data-value" id="rawBeam2Energy">---</div>
+                    </div>
+                    <div class="raw-data-item">
+                        <div class="raw-data-label">Beam 3 Azimuth</div>
+                        <div class="raw-data-value" id="rawBeam3Azi">---</div>
+                    </div>
+                    <div class="raw-data-item">
+                        <div class="raw-data-label">Beam 3 Energy</div>
+                        <div class="raw-data-value" id="rawBeam3Energy">---</div>
+                    </div>
+                    <div class="raw-data-item">
+                        <div class="raw-data-label">Update Count</div>
+                        <div class="raw-data-value" id="updateCount">0</div>
+                    </div>
+                    <div class="raw-data-item">
+                        <div class="raw-data-label">Last Update</div>
+                        <div class="raw-data-value" id="lastUpdate" style="font-size: 0.9em;">---</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Beam Energy Levels -->
+            <div class="card">
+                <h2>Beam Energy Levels <span class="info-badge">50 samples</span></h2>
                 <div id="beamSections"></div>
             </div>
 
             <!-- LED Control -->
             <div class="card">
-                <h2>💡 LED Control</h2>
+                <h2>LED Control</h2>
                 <div class="control-group">
                     <label>Effect Mode</label>
                     <div>
@@ -381,7 +659,7 @@
                 </div>
 
                 <div class="control-group">
-                    <label>Color (for Breath/Solid modes)</label>
+                    <label>Color (Breath/Solid)</label>
                     <input type="color" id="ledColor" value="#ff00ff" onchange="updateColor(this.value)">
                 </div>
 
@@ -394,9 +672,9 @@
                 <div class="section-divider"></div>
 
                 <div class="control-group">
-                    <label>🔬 Color Calibration Test <span class="info-badge">Advanced</span></label>
-                    <p style="font-size: 0.85em; opacity: 0.8; margin-bottom: 8px;">
-                        Test byte order: Set solid mode, pick pure RED (#ff0000), then try each order below.
+                    <label>Color Calibration <span class="info-badge">Testing</span></label>
+                    <p style="font-size: 0.8em; color: var(--text-secondary); margin-bottom: 10px;">
+                        Set solid mode + pure RED, test each order
                     </p>
                     <div>
                         <button onclick="testColorOrder('RGB')">RGB</button>
@@ -406,18 +684,18 @@
                         <button onclick="testColorOrder('BRG')">BRG</button>
                         <button onclick="testColorOrder('GBR')">GBR</button>
                     </div>
-                    <p style="font-size: 0.8em; opacity: 0.7; margin-top: 8px;">
-                        Current: <span id="currentOrder" style="color: #4ade80; font-weight: bold;">GRB</span>
+                    <p style="font-size: 0.8em; color: var(--text-secondary); margin-top: 10px;">
+                        Current: <span id="currentOrder" style="color: var(--accent-green);">GRB</span>
                     </p>
                 </div>
             </div>
 
-            <!-- Audio Settings & Controls -->
+            <!-- Audio Settings -->
             <div class="card">
-                <h2>🎛️ Audio Processing <span class="info-badge">Editable</span></h2>
+                <h2>Audio Processing <span class="info-badge">Editable</span></h2>
 
                 <div class="audio-param">
-                    <span class="audio-param-name">Microphone Gain</span>
+                    <span class="audio-param-name">Mic Gain</span>
                     <span class="audio-param-value" id="micGain">--</span>
                     <div class="param-control">
                         <input type="number" id="micGainInput" value="90" step="1" min="0" max="200">
@@ -437,13 +715,13 @@
                 <div class="audio-param">
                     <span class="audio-param-name">AGC Current</span>
                     <span class="audio-param-value" id="agcCurrent">--</span>
-                    <span style="opacity: 0.7; font-size: 0.85em;">Read-only</span>
+                    <span style="color: var(--text-secondary); font-size: 0.8em;">Read-only</span>
                 </div>
 
                 <div class="section-divider"></div>
 
                 <div class="audio-param">
-                    <span class="audio-param-name">Noise Suppress (Stationary)</span>
+                    <span class="audio-param-name">Noise Suppress (Stat)</span>
                     <span class="audio-param-value" id="noiseSuppressStat">--</span>
                     <div class="param-control">
                         <input type="number" id="noiseSuppressInput" value="0" step="0.01" min="0" max="1">
@@ -454,7 +732,7 @@
                 <div class="audio-param">
                     <span class="audio-param-name">Noise Suppress (Non-stat)</span>
                     <span class="audio-param-value" id="noiseSuppressNonstat">--</span>
-                    <span style="opacity: 0.7; font-size: 0.85em;">Read-only</span>
+                    <span style="color: var(--text-secondary); font-size: 0.8em;">Read-only</span>
                 </div>
 
                 <div class="section-divider"></div>
@@ -472,13 +750,13 @@
 
             <!-- GPIO Status -->
             <div class="card">
-                <h2>🔌 GPIO Status</h2>
-                <h3 style="margin: 12px 0 8px 0; font-size: 0.95em; opacity: 0.9;">Inputs</h3>
+                <h2>GPIO Status</h2>
+                <h3 style="margin: 12px 0 10px 0; font-size: 1em; color: var(--text-secondary); letter-spacing: 1px;">INPUTS</h3>
                 <div class="gpio-grid" id="gpioInputs"></div>
 
                 <div class="section-divider"></div>
 
-                <h3 style="margin: 12px 0 8px 0; font-size: 0.95em; opacity: 0.9;">Outputs</h3>
+                <h3 style="margin: 12px 0 10px 0; font-size: 1em; color: var(--text-secondary); letter-spacing: 1px;">OUTPUTS</h3>
                 <div class="gpio-grid" id="gpioOutputs"></div>
             </div>
         </div>
@@ -488,73 +766,96 @@
         const canvas = document.getElementById('doaCanvas');
         const ctx = canvas.getContext('2d');
         let currentEffect = 2;
+        let updateCounter = 0;
+        let previousValues = {};
 
         function drawDoA(angle, beamAzimuths, beamEnergies, speechActive) {
             const centerX = canvas.width / 2;
             const centerY = canvas.height / 2;
-            const radius = 140;
+            const radius = 160;
 
             ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-            // Draw concentric circles
-            for (let r of [radius * 0.33, radius * 0.66, radius]) {
+            // Draw radar grid
+            for (let r of [radius * 0.25, radius * 0.5, radius * 0.75, radius]) {
                 ctx.beginPath();
                 ctx.arc(centerX, centerY, r, 0, 2 * Math.PI);
-                ctx.strokeStyle = `rgba(255,255,255,${r === radius ? 0.4 : 0.15})`;
+                ctx.strokeStyle = r === radius ? 'rgba(0, 217, 255, 0.4)' : 'rgba(0, 217, 255, 0.1)';
                 ctx.lineWidth = r === radius ? 2 : 1;
                 ctx.stroke();
             }
 
-            // Draw cardinal directions
-            ctx.fillStyle = 'rgba(255,255,255,0.7)';
-            ctx.font = 'bold 13px Arial';
-            ctx.textAlign = 'center';
-            ctx.fillText('0°', centerX, centerY - radius - 12);
-            ctx.fillText('90°', centerX + radius + 22, centerY + 5);
-            ctx.fillText('180°', centerX, centerY + radius + 22);
-            ctx.fillText('270°', centerX - radius - 25, centerY + 5);
+            // Draw crosshairs
+            ctx.strokeStyle = 'rgba(0, 217, 255, 0.2)';
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.moveTo(centerX, centerY - radius);
+            ctx.lineTo(centerX, centerY + radius);
+            ctx.moveTo(centerX - radius, centerY);
+            ctx.lineTo(centerX + radius, centerY);
+            ctx.stroke();
 
-            // Draw beam azimuths as colored arcs
-            const beamColors = ['#3b82f6', '#8b5cf6', '#ec4899', '#f59e0b'];
+            // Draw cardinal directions
+            ctx.fillStyle = 'rgba(0, 217, 255, 0.8)';
+            ctx.font = 'bold 14px JetBrains Mono';
+            ctx.textAlign = 'center';
+            ctx.fillText('0°', centerX, centerY - radius - 15);
+            ctx.fillText('90°', centerX + radius + 25, centerY + 5);
+            ctx.fillText('180°', centerX, centerY + radius + 25);
+            ctx.fillText('270°', centerX - radius - 30, centerY + 5);
+
+            // Draw beam azimuths
+            const beamColors = ['#00d9ff', '#9d4edd', '#ff006e', '#ffbe0b'];
             beamAzimuths.forEach((azimuth, i) => {
                 const energy = Math.min(beamEnergies[i] / 30000, 1);
                 if (energy > 0.05) {
                     const rad = (azimuth - 90) * Math.PI / 180;
-                    const beamRadius = radius * 0.9;
+                    const beamRadius = radius * 0.85;
                     const x = centerX + Math.cos(rad) * beamRadius;
                     const y = centerY + Math.sin(rad) * beamRadius;
 
+                    // Beam line
                     ctx.beginPath();
                     ctx.moveTo(centerX, centerY);
                     ctx.lineTo(x, y);
-                    ctx.strokeStyle = beamColors[i].replace(')', `, ${energy})`).replace('rgb', 'rgba');
-                    ctx.lineWidth = 3;
+                    const alpha = 0.3 + (energy * 0.7);
+                    ctx.strokeStyle = beamColors[i].replace(')', `, ${alpha})`).replace('rgb', 'rgba').replace('#', 'rgba(') + ')';
+                    ctx.lineWidth = 2 + (energy * 2);
                     ctx.stroke();
 
-                    // Draw beam dot
+                    // Beam endpoint
                     ctx.beginPath();
-                    ctx.arc(x, y, 4, 0, 2 * Math.PI);
+                    ctx.arc(x, y, 3 + (energy * 2), 0, 2 * Math.PI);
                     ctx.fillStyle = beamColors[i];
                     ctx.fill();
+                    ctx.shadowBlur = 15;
+                    ctx.shadowColor = beamColors[i];
+                    ctx.fill();
+                    ctx.shadowBlur = 0;
                 }
             });
 
             // Draw main DoA indicator
             const rad = (angle - 90) * Math.PI / 180;
-            const indicatorRadius = speechActive ? radius - 8 : radius - 20;
+            const indicatorRadius = speechActive ? radius - 10 : radius - 25;
             const x = centerX + Math.cos(rad) * indicatorRadius;
             const y = centerY + Math.sin(rad) * indicatorRadius;
 
-            // Draw arrow shaft
+            // Arrow shaft with glow
             ctx.beginPath();
             ctx.moveTo(centerX, centerY);
             ctx.lineTo(x, y);
-            ctx.strokeStyle = speechActive ? '#22c55e' : 'rgba(255,255,255,0.6)';
-            ctx.lineWidth = speechActive ? 5 : 3;
+            ctx.strokeStyle = speechActive ? '#00ff88' : 'rgba(255, 255, 255, 0.6)';
+            ctx.lineWidth = speechActive ? 6 : 4;
+            if (speechActive) {
+                ctx.shadowBlur = 20;
+                ctx.shadowColor = '#00ff88';
+            }
             ctx.stroke();
+            ctx.shadowBlur = 0;
 
-            // Draw arrowhead
-            const arrowSize = speechActive ? 18 : 12;
+            // Arrowhead
+            const arrowSize = speechActive ? 20 : 15;
             const arrowAngle = Math.PI / 6;
             ctx.beginPath();
             ctx.moveTo(x, y);
@@ -567,14 +868,17 @@
                 y - arrowSize * Math.sin(rad + arrowAngle)
             );
             ctx.closePath();
-            ctx.fillStyle = speechActive ? '#22c55e' : 'rgba(255,255,255,0.6)';
+            ctx.fillStyle = speechActive ? '#00ff88' : 'rgba(255, 255, 255, 0.6)';
             ctx.fill();
 
-            // Draw center dot
+            // Center dot
             ctx.beginPath();
-            ctx.arc(centerX, centerY, 6, 0, 2 * Math.PI);
-            ctx.fillStyle = 'rgba(255,255,255,0.9)';
+            ctx.arc(centerX, centerY, 8, 0, 2 * Math.PI);
+            ctx.fillStyle = '#00d9ff';
+            ctx.shadowBlur = 15;
+            ctx.shadowColor = '#00d9ff';
             ctx.fill();
+            ctx.shadowBlur = 0;
         }
 
         function drawSparkline(canvasId, data) {
@@ -592,21 +896,24 @@
             const max = Math.max(...data, 1);
             const step = width / (data.length - 1);
 
-            // Draw area
+            // Draw area with gradient
+            const gradient = ctx.createLinearGradient(0, 0, 0, height);
+            gradient.addColorStop(0, 'rgba(0, 255, 136, 0.4)');
+            gradient.addColorStop(1, 'rgba(0, 255, 136, 0.05)');
+
             ctx.beginPath();
             ctx.moveTo(0, height);
             data.forEach((value, i) => {
                 const x = i * step;
                 const y = height - (value / max) * height * 0.9;
-                if (i === 0) ctx.lineTo(x, y);
-                else ctx.lineTo(x, y);
+                ctx.lineTo(x, y);
             });
             ctx.lineTo(width, height);
             ctx.closePath();
-            ctx.fillStyle = 'rgba(74, 222, 128, 0.3)';
+            ctx.fillStyle = gradient;
             ctx.fill();
 
-            // Draw line
+            // Draw line with glow
             ctx.beginPath();
             data.forEach((value, i) => {
                 const x = i * step;
@@ -614,9 +921,25 @@
                 if (i === 0) ctx.moveTo(x, y);
                 else ctx.lineTo(x, y);
             });
-            ctx.strokeStyle = '#4ade80';
+            ctx.strokeStyle = '#00ff88';
             ctx.lineWidth = 2;
+            ctx.shadowBlur = 8;
+            ctx.shadowColor = '#00ff88';
             ctx.stroke();
+            ctx.shadowBlur = 0;
+        }
+
+        function updateRawValue(elementId, newValue) {
+            const element = document.getElementById(elementId);
+            const oldValue = previousValues[elementId];
+
+            if (oldValue !== newValue) {
+                element.classList.add('updating');
+                setTimeout(() => element.classList.remove('updating'), 300);
+                previousValues[elementId] = newValue;
+            }
+
+            element.textContent = newValue;
         }
 
         function updateStatus() {
@@ -625,15 +948,29 @@
                 .then(data => {
                     if (!data.success) return;
 
-                    // Update DoA
+                    updateCounter++;
+
+                    // Update raw data monitor
+                    updateRawValue('rawDoaAngle', data.doa.angle + '°');
+                    updateRawValue('rawSpeech', data.doa.speech_detected ? 'TRUE' : 'FALSE');
+
+                    for (let i = 0; i < 4; i++) {
+                        updateRawValue(`rawBeam${i}Azi`, Math.round(data.beams.azimuths[i]) + '°');
+                        updateRawValue(`rawBeam${i}Energy`, Math.round(data.beams.energies[i]).toLocaleString());
+                    }
+
+                    updateRawValue('updateCount', updateCounter);
+                    updateRawValue('lastUpdate', new Date().toLocaleTimeString());
+
+                    // Update DoA display
                     document.getElementById('doaAngle').textContent = data.doa.angle;
                     const speechInd = document.getElementById('speechIndicator');
                     speechInd.classList.toggle('active', data.doa.speech_detected);
 
-                    // Draw DoA
+                    // Draw DoA radar
                     drawDoA(data.doa.angle, data.beams.azimuths, data.beams.energies, data.doa.speech_detected);
 
-                    // Update beam sections with sparklines
+                    // Update beam sections
                     const beamSectionsDiv = document.getElementById('beamSections');
                     beamSectionsDiv.innerHTML = data.beams.labels.map((label, i) => {
                         const energy = data.beams.energies[i];
@@ -642,14 +979,14 @@
                         return `
                             <div class="beam-section">
                                 <div class="beam-header">
-                                    <span><strong>${label}</strong></span>
+                                    <span class="beam-label">${label}</span>
                                     <span class="beam-azimuth">${azimuth}°</span>
                                 </div>
                                 <div class="beam-header">
                                     <span class="beam-energy">${Math.round(energy).toLocaleString()}</span>
                                 </div>
                                 <div class="sparkline-container">
-                                    <canvas id="${canvasId}" class="sparkline" width="400" height="40"></canvas>
+                                    <canvas id="${canvasId}" class="sparkline" width="500" height="50"></canvas>
                                 </div>
                             </div>
                         `;
@@ -673,14 +1010,14 @@
                     // Update GPIO
                     document.getElementById('gpioInputs').innerHTML = Object.entries(data.gpio.inputs).map(([name, value]) => `
                         <div class="gpio-item">
-                            <span>${name.replace(/_/g, ' ')}</span>
+                            <span>${name.replace(/_/g, ' ').toUpperCase()}</span>
                             <div class="gpio-status ${value ? 'on' : ''}"></div>
                         </div>
                     `).join('');
 
                     document.getElementById('gpioOutputs').innerHTML = Object.entries(data.gpio.outputs).map(([name, value]) => `
                         <div class="gpio-item">
-                            <span>${name.replace(/_/g, ' ')}</span>
+                            <span>${name.replace(/_/g, ' ').toUpperCase()}</span>
                             <div class="gpio-status ${value ? 'on' : ''}"></div>
                         </div>
                     `).join('');
@@ -704,14 +1041,12 @@
         function updateBrightness(value) {
             document.getElementById('brightnessValue').textContent = value;
 
-            // Send brightness command
             fetch('/api/led/brightness', {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
                 body: JSON.stringify({brightness: parseInt(value)})
             });
 
-            // If in solid or breath mode, also update the color with new brightness
             if (currentEffect === 1 || currentEffect === 3) {
                 const colorValue = document.getElementById('ledColor').value;
                 const r = parseInt(colorValue.slice(1, 3), 16);
@@ -755,7 +1090,7 @@
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
                 body: JSON.stringify({gain})
-            }).then(() => alert('Mic gain set to ' + gain));
+            });
         }
 
         function setAgcMax() {
@@ -764,7 +1099,7 @@
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
                 body: JSON.stringify({gain})
-            }).then(() => alert('AGC max gain set to ' + gain));
+            });
         }
 
         function setNoiseSuppression() {
@@ -773,17 +1108,15 @@
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
                 body: JSON.stringify({level})
-            }).then(() => alert('Noise suppression set to ' + level));
+            });
         }
 
         function testColorOrder(order) {
-            // Get current color
             const colorValue = document.getElementById('ledColor').value;
             const r = parseInt(colorValue.slice(1, 3), 16);
             const g = parseInt(colorValue.slice(3, 5), 16);
             const b = parseInt(colorValue.slice(5, 7), 16);
 
-            // Test with this byte order
             fetch('/api/led/test_color', {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
@@ -792,7 +1125,6 @@
               .then(data => {
                   if (data.success) {
                       document.getElementById('currentOrder').textContent = order;
-                      console.log('Tested order:', order, 'Bytes sent:', data.bytes);
                   }
               });
         }
