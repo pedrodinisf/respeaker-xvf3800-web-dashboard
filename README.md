@@ -1,4 +1,4 @@
-# ReSpeaker XVF3800 on Mac Mini
+# reSpeaker XMOS XVF3800 – AI-powered 4-Mic Array
 
 ![Dashboard Overview](docs/screenshots/dashboard-overview.png)
 

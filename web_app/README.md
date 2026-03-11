@@ -1,4 +1,4 @@
-# ReSpeaker XVF3800 Web Control Dashboard
+# reSpeaker XMOS XVF3800 AI-powered 4-Mic Array - Web Control Dashboard
 
 Real-time visualization and control interface for the ReSpeaker XVF3800 4-Mic Array.
 
