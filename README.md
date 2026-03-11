@@ -282,6 +282,15 @@ python3 app.py
 
 ![Dashboard Overview](docs/screenshots/dashboard-overview.png)
 
+## Roadmap
+
+- [ ] **Wake word detection** — offline wake word engine ([OpenWakeWord](https://github.com/dscripka/openWakeWord)) listening continuously via the mic array, with LED feedback on detection
+- [ ] **Voice transcription** — on-device speech-to-text using [MLX Whisper](https://github.com/ml-explore/mlx-examples/tree/main/whisper) (Apple Silicon accelerated), triggered after wake word
+- [ ] **Wake word + transcription UI** — dashboard card with state indicator, confidence bar, transcription history, and SSE real-time updates
+- [ ] **6-channel firmware support** — expose raw mic data alongside processed audio (firmware v2.0.8)
+- [ ] **Audio output routing controls** — configure which beam/channel is routed to USB output (left/right)
+- [ ] **Export/import preset configurations** — share tuning profiles as JSON files
+
 ## Resources
 
 - [Official GitHub repo](https://github.com/respeaker/reSpeaker_XVF3800_USB_4MIC_ARRAY)
