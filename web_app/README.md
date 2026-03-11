@@ -2,6 +2,8 @@
 
 Real-time visualization and control interface for the ReSpeaker XVF3800 4-Mic Array.
 
+![Dashboard Overview](../docs/screenshots/dashboard-overview.png)
+
 ## Features
 
 ### 🎯 Direction of Arrival (DoA) Visualization
@@ -9,6 +11,8 @@ Real-time visualization and control interface for the ReSpeaker XVF3800 4-Mic Ar
 - **Real-time arrow** pointing toward detected sound source
 - **Speech detection indicator** lights up green when speech is detected
 - **Beam azimuth overlay** showing all 4 beam directions
+
+![Beam Energy & LED Control](../docs/screenshots/beam-energy-led-control.png)
 
 ### 📊 Beam Energy Levels
 - **4 live meters** showing speech energy for each beam:
@@ -25,11 +29,15 @@ Real-time visualization and control interface for the ReSpeaker XVF3800 4-Mic Ar
 - **Color picker**: Set custom RGB colors for Breath/Solid modes
 - **Animation speed**: Control how fast effects animate
 
+![Audio Processing](../docs/screenshots/audio-processing.png)
+
 ### 🎛️ Audio Settings Display
 - **Microphone Gain**: Current input gain level
 - **AGC Max Gain**: Maximum automatic gain control
 - **AGC Current**: Current AGC level
 - **Noise Suppression**: Gain-floor for noise reduction
+
+![GPIO & Recording](../docs/screenshots/gpio-recording.png)
 
 ### 🔌 GPIO Status
 - **Input pins**: Mute button, X1D13, X1D34 status

@@ -277,6 +277,8 @@ python3 app.py
 
 **Features**: DoA radar visualization, beam energy meters, LED control (effects, color, brightness), 8 audio tuning presets, audio recording/playback, GPIO monitoring, and save/reset/reboot device persistence controls.
 
+![Dashboard Overview](docs/screenshots/dashboard-overview.png)
+
 ## Resources
 
 - [Official GitHub repo](https://github.com/respeaker/reSpeaker_XVF3800_USB_4MIC_ARRAY)
