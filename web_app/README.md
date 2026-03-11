@@ -52,7 +52,7 @@ python3 app.py
 
 Then open in your browser:
 - **Local**: http://localhost:5001
-- **Network**: http://192.168.1.69:5001 (accessible from other devices on your network)
+- **Network**: http://<your-ip>:5001 (accessible from other devices on your network)
 
 ## API Endpoints
 

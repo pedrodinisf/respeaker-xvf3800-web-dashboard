@@ -264,6 +264,19 @@ dfu-util -R -e -a 1 -D path/to/firmware.bin
 - **Buttons**: Mute (with indicator LED) + Reset
 - **Sample rate**: 16 kHz (USB), 48 kHz (I2S)
 
+## Web Control Dashboard
+
+A browser-based dashboard for real-time device control and monitoring. See [`web_app/README.md`](web_app/README.md) for full documentation and API reference.
+
+```bash
+cd web_app
+pip3 install -r requirements.txt
+python3 app.py
+# Open http://localhost:5001
+```
+
+**Features**: DoA radar visualization, beam energy meters, LED control (effects, color, brightness), 8 audio tuning presets, audio recording/playback, GPIO monitoring, and save/reset/reboot device persistence controls.
+
 ## Resources
 
 - [Official GitHub repo](https://github.com/respeaker/reSpeaker_XVF3800_USB_4MIC_ARRAY)
