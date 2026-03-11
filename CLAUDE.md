@@ -273,3 +273,86 @@ Uses `pyusb` with USB vendor control transfers. Device identifiers: vendor `0x28
 - Record/Playback: https://wiki.seeedstudio.com/respeaker_xvf3800_xiao_record_playback/
 - Home Assistant: https://wiki.seeedstudio.com/respeaker_xvf3800_xiao_home_assistant/
 - Xiaozhi Voice Agent: https://wiki.seeedstudio.com/respeaker_xvf_3800_xiaozhi/
+
+## Web App (`web_app/`)
+
+Flask dashboard running on port 5001. Launch with `python app.py` from `web_app/`.
+
+### Current Features (main branch)
+- Device control: LED effects, brightness, color, speed
+- DoA visualization with 360° compass
+- Beam energy monitoring (4 channels)
+- Audio recording/playback (16kHz WAV)
+- 8 tuning presets (one-click configuration)
+- GPIO status monitoring
+- Raw USB data monitor
+- Dark industrial UI theme
+
+### Tech Stack
+- **Backend**: Flask 3.0.0, pyusb 1.2.1, sounddevice 0.4.6, numpy, scipy
+- **Frontend**: Vanilla JS, no frameworks, 200ms polling for status updates
+- **Audio**: sounddevice InputStream, 16kHz, 2-channel, WAV output to `recordings/`
+
+## Planned Feature: Wake Word Detection + Voice Transcription
+
+**Status**: Not yet implemented. A previous attempt (push-to-talk) was rolled back from main due to breaking the app.
+
+### Chosen Approach
+- **Wake word engine**: OpenWakeWord (100% open source, offline, ~200KB models, custom wake word training)
+- **Transcription**: MLX Whisper (`mlx-community/whisper-large-v3-turbo`) for Apple Silicon acceleration
+- **Integration**: Built into the existing Flask web app, not a separate service
+
+### Architecture
+```
+ReSpeaker USB (16kHz, 2ch) → sounddevice.InputStream (mono int16, 80ms frames)
+  → OpenWakeWord.predict() → [detection] → accumulate audio buffer
+  → VAD silence detection → stop → mlx_whisper.transcribe() → SSE to frontend
+```
+
+### State Machine
+```
+IDLE → LISTENING → WAKE_DETECTED → RECORDING → TRANSCRIBING → LISTENING (loop)
+```
+
+### Implementation Tasks
+
+1. **Dependencies**: Add `openwakeword`, `onnxruntime`, `mlx-whisper`, `python-dotenv` to `requirements.txt`
+
+2. **Backend (`app.py`)**:
+   - `WakeWordState` enum and `ww_state` dict with thread lock
+   - Config loading from `.env` (threshold, cooldown, VAD params, Whisper model)
+   - SSE event system (`push_sse_event()`, `/api/wakeword/events` endpoint)
+   - Audio pipeline: `wakeword_audio_callback()` — 80ms frames through OpenWakeWord, energy-based VAD
+   - `_on_wake_detected()` — LED feedback + SSE event
+   - `_transcribe_audio()` — concat buffer, float32 conversion, `mlx_whisper.transcribe()`, save WAV
+   - API routes: `POST /api/wakeword/start`, `POST /api/wakeword/stop`, `GET /api/wakeword/status`, `POST /api/wakeword/config`, `GET /api/wakeword/transcriptions`, `GET /api/wakeword/events`
+   - Mutual exclusion: wake word listener and manual recording cannot run simultaneously (single audio stream)
+   - Whisper model preloading at startup if `PRELOAD_WHISPER=1`
+
+3. **Frontend (`templates/index.html`)**:
+   - Wake Word Detection card: state indicator, confidence bar, start/stop button
+   - Configuration controls: threshold, cooldown, wake word model selector
+   - Transcription history list with text, timestamp, duration, language
+   - SSE EventSource for real-time updates (detected, recording, transcription results)
+   - Mutual exclusion UI: disable manual record when listening, and vice versa
+
+4. **Configuration (`.env`)**:
+   - `WAKEWORD_ENABLED`, `WAKEWORD_MODEL` (default: `hey_jarvis`), `WAKEWORD_THRESHOLD` (default: 0.5), `WAKEWORD_COOLDOWN` (default: 2.0s)
+   - `VAD_SILENCE_THRESHOLD` (default: 500), `VAD_SILENCE_DURATION` (default: 1.5s), `VAD_MAX_RECORDING_DURATION` (default: 30s)
+   - `WHISPER_MODEL`, `WHISPER_LANGUAGE`, `PRELOAD_WHISPER`
+
+### LED State Mapping
+| State | Effect | Color | Visual |
+|-------|--------|-------|--------|
+| IDLE | Rainbow (2) | — | Default |
+| LISTENING | Breath (1) | Blue | Slow pulsing blue |
+| WAKE_DETECTED | Solid (3) | Cyan | Bright cyan flash |
+| RECORDING | Solid (3) | Green | Solid green |
+| TRANSCRIBING | Breath (1) | Purple | Fast pulsing purple |
+
+### Key Constraints
+- Audio stream mutual exclusion: only one consumer (wake word OR manual recording) at a time
+- OpenWakeWord needs 16kHz mono int16, 80ms frames (1280 samples) — must convert from ReSpeaker's 2-channel output
+- MLX Whisper expects float32 in [-1.0, 1.0] range
+- SSE single-queue is fine for single-user dashboard (v1)
+- Graceful degradation: if openwakeword or mlx-whisper not installed, UI shows status badge and disables features

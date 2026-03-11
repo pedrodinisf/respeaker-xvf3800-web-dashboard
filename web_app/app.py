@@ -102,6 +102,11 @@ class ReSpeaker:
         'AEC_ASROUTONOFF': (33, 35, 4, 'int32'),        # Range: 0,1
         'AEC_ASROUTGAIN': (33, 36, 4, 'float'),         # Range: [0.0 .. 1000.0]
         'AEC_FIXEDBEAMSONOFF': (33, 37, 4, 'int32'),    # Range: 0,1
+
+        # Device persistence (resid=48)
+        'SAVE_CONFIGURATION': (48, 9, 1, 'uint8'),
+        'CLEAR_CONFIGURATION': (48, 10, 1, 'uint8'),
+        'REBOOT': (48, 7, 1, 'uint8'),
     }
 
     def __init__(self):
@@ -845,6 +850,45 @@ def apply_preset(preset_name):
             'preset': preset['name'],
             'description': preset['description']
         })
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+# ============================================================================
+# Device Persistence Endpoints
+# ============================================================================
+
+@app.route('/api/device/save', methods=['POST'])
+def save_configuration():
+    """Save current settings to device flash memory"""
+    try:
+        with device_lock:
+            dev = get_device()
+            dev.write('SAVE_CONFIGURATION', [1])
+        return jsonify({'success': True, 'message': 'Configuration saved to flash'})
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route('/api/device/factory_reset', methods=['POST'])
+def factory_reset():
+    """Clear saved configuration, revert to factory defaults"""
+    try:
+        with device_lock:
+            dev = get_device()
+            dev.write('CLEAR_CONFIGURATION', [1])
+        return jsonify({'success': True, 'message': 'Configuration cleared, reboot to apply factory defaults'})
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route('/api/device/reboot', methods=['POST'])
+def reboot_device():
+    """Reboot the XVF3800 chip"""
+    try:
+        global respeaker
+        with device_lock:
+            dev = get_device()
+            dev.write('REBOOT', [1])
+            respeaker = None  # Device will reconnect
+        return jsonify({'success': True, 'message': 'Device rebooting'})
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)}), 500
 

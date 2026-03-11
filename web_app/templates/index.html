@@ -928,6 +928,26 @@
                         <strong style="color: var(--accent-cyan);">💡 TIP:</strong> For Teams/Meet/Zoom, connect speakers to ReSpeaker's 3.5mm jack for best echo cancellation!
                     </div>
                 </div>
+
+                <hr style="border: none; border-top: 1px solid var(--border-color); margin: 25px 0 20px;">
+                <h3 style="font-size: 1em; color: var(--text-secondary); letter-spacing: 2px; margin-bottom: 15px;">DEVICE MEMORY</h3>
+                <div class="device-actions" style="display: flex; gap: 12px; flex-wrap: wrap;">
+                    <button onclick="saveToDevice()" style="flex: 1; min-width: 140px; padding: 12px 20px; background: rgba(0, 255, 136, 0.15); border: 1px solid var(--accent-green); color: var(--accent-green); border-radius: 8px; cursor: pointer; font-family: 'Rajdhani', sans-serif; font-size: 1em; font-weight: 600; transition: all 0.2s;"
+                        onmouseover="this.style.background='rgba(0, 255, 136, 0.3)'" onmouseout="this.style.background='rgba(0, 255, 136, 0.15)'">
+                        Save to Device
+                    </button>
+                    <button onclick="factoryReset()" style="flex: 1; min-width: 140px; padding: 12px 20px; background: rgba(255, 0, 110, 0.15); border: 1px solid var(--accent-red); color: var(--accent-red); border-radius: 8px; cursor: pointer; font-family: 'Rajdhani', sans-serif; font-size: 1em; font-weight: 600; transition: all 0.2s;"
+                        onmouseover="this.style.background='rgba(255, 0, 110, 0.3)'" onmouseout="this.style.background='rgba(255, 0, 110, 0.15)'">
+                        Factory Reset
+                    </button>
+                    <button onclick="rebootDevice()" style="flex: 1; min-width: 140px; padding: 12px 20px; background: rgba(255, 165, 0, 0.15); border: 1px solid #ffa500; color: #ffa500; border-radius: 8px; cursor: pointer; font-family: 'Rajdhani', sans-serif; font-size: 1em; font-weight: 600; transition: all 0.2s;"
+                        onmouseover="this.style.background='rgba(255, 165, 0, 0.3)'" onmouseout="this.style.background='rgba(255, 165, 0, 0.15)'">
+                        Reboot Device
+                    </button>
+                </div>
+                <div style="margin-top: 12px; font-family: 'JetBrains Mono', monospace; font-size: 0.8em; color: var(--text-secondary);">
+                    Save writes current settings to flash. They persist across power cycles and work on any machine.
+                </div>
             </div>
 
             <!-- Beam Energy Levels -->
@@ -1724,6 +1744,62 @@
                     card.style.pointerEvents = 'auto';
                 });
                 showNotification('✗ Error applying preset', 'error');
+            }
+        }
+
+        async function saveToDevice() {
+            try {
+                const response = await fetch('/api/device/save', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'}
+                });
+                const data = await response.json();
+                if (data.success) {
+                    showNotification('✓ Settings saved to device flash', 'success');
+                } else {
+                    showNotification(`✗ Save failed: ${data.error}`, 'error');
+                }
+            } catch (error) {
+                console.error('Error saving configuration:', error);
+                showNotification('✗ Error saving to device', 'error');
+            }
+        }
+
+        async function factoryReset() {
+            if (!confirm('Factory Reset: This will erase all saved settings and revert to defaults. Continue?')) return;
+            try {
+                const response = await fetch('/api/device/factory_reset', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'}
+                });
+                const data = await response.json();
+                if (data.success) {
+                    showNotification('✓ Configuration cleared — reboot device to apply defaults', 'success');
+                } else {
+                    showNotification(`✗ Reset failed: ${data.error}`, 'error');
+                }
+            } catch (error) {
+                console.error('Error resetting configuration:', error);
+                showNotification('✗ Error resetting device', 'error');
+            }
+        }
+
+        async function rebootDevice() {
+            if (!confirm('Reboot the XVF3800? The device will briefly disconnect.')) return;
+            try {
+                const response = await fetch('/api/device/reboot', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'}
+                });
+                const data = await response.json();
+                if (data.success) {
+                    showNotification('✓ Device rebooting — wait a few seconds for reconnection', 'success');
+                } else {
+                    showNotification(`✗ Reboot failed: ${data.error}`, 'error');
+                }
+            } catch (error) {
+                console.error('Error rebooting device:', error);
+                showNotification('✗ Error rebooting device', 'error');
             }
         }
 
