@@ -1,0 +1,33 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+
+# Environment
+.env
+.env.local
+
+# macOS
+.DS_Store
+
+# Claude Code
+.claude/
+CLAUDE.md
+
+# TLDR
+.tldr/
+.tldrignore
+web_app/.tldr/
+web_app/.tldrignore
+
+# Recordings (user audio data)
+web_app/recordings/*.wav
+
+# Nested git (prevent submodule issues)
+reSpeaker_XVF3800_USB_4MIC_ARRAY/.git
+
+# IDE
+.vscode/
+.idea/
