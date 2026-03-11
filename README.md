@@ -1,5 +1,8 @@
 # ReSpeaker XVF3800 on Mac Mini
 
+![Dashboard Overview](docs/screenshots/dashboard-overview.png)
+
+
 Getting the most out of the ReSpeaker XVF3800 USB 4-Mic Array connected to a Mac Mini via USB-C.
 
 ## What This Device Does
